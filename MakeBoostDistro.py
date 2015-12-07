@@ -125,8 +125,8 @@ BoostSpecialFolders = [ "doc", "more", "status", "tools" ]
 BoostSubProjects = [
 	"accumulators", "align", "algorithm", "any", "array", "asio", "assert", "assign", "atomic", 
 	"bimap", "bind", 
-	"chrono", "circular_buffer", "compatibility", "concept_check", "config", "container", "context", "conversion", "core", "coroutine", "crc",
-	"date_time", "detail", "disjoint_sets", "dynamic_bitset", 
+	"chrono", "circular_buffer", "compatibility", "concept_check", "config", "container", "context", "conversion", "convert", "core", "coroutine", "coroutine2", "crc",
+	"date_time", "detail", "disjoint_sets", "dynamic_bitset",
 	"endian", "exception",
 	"filesystem", "flyweight", "foreach", "format", "function", "function_types", "functional", "fusion",
 	"geometry", "gil", "graph", "graph_parallel",
@@ -141,7 +141,7 @@ BoostSubProjects = [
 	"scope_exit", "serialization", "signals", "signals2", "smart_ptr", "sort", "spirit", "statechart", "static_assert", "system",
 	"test", "thread", "throw_exception", "timer", "tokenizer", "tr1", "tti", "tuple", "type_index", "type_erasure", "type_traits", "typeof",
 	"units", "unordered", "utility", "uuid",
-	"variant",
+	"variant", "vmd",
 	"wave", "winapi",
 	"xpressive"
 ]
