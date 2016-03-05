@@ -110,7 +110,7 @@ def CopyNestedProject(src, dst, headers, p):
 			CopyDir(Source, Dest, item)
 	# 	shutil.copytree(Source, Dest, symlinks=False, ignore=shutil.ignore_patterns('\.*', "include"))
 
-	Source = os.path.join(src, "%s/include/boost/%s" % (p[1],p[0]))
+	Source = os.path.join(src, "%s/include/boost" % (p[1]))
 	#  	Dest = os.path.join(headers, p)
 	# 	print "Installing headers from %s to %s" % (Source, headers)
 	CopyInclude(Source, headers)
@@ -179,7 +179,7 @@ for p in BoostSubProjects:
 	else:
 		NestedSource  = os.path.join(SourceRoot,"libs",p[0])
 		NestedDest    = os.path.join(DestRoot,"libs",p[0])
-		NestedHeaders = os.path.join(DestRoot,"boost",p[0])
+		NestedHeaders = os.path.join(DestRoot,"boost")
 		if not os.path.exists(NestedDest):
 			os.makedirs(NestedDest)
 		if not os.path.exists(NestedHeaders):
