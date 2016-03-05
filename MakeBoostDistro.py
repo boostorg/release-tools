@@ -12,6 +12,7 @@
 
 import os, sys
 import shutil
+import stat
 
 ## from <http://stackoverflow.com/questions/1868714/how-do-i-copy-an-entire-directory-of-files-into-an-existing-directory-using-pyth>
 def mergetree(src, dst, symlinks = False, ignore = None):
@@ -41,19 +42,19 @@ def mergetree(src, dst, symlinks = False, ignore = None):
 			if os.path.exists(d):
 				print "## Overwriting file %s with %s" % (d, s)
 			shutil.copy2(s, d)
-      
 
-def CopyFile (s, d, file):
-	shutil.copy2(os.path.join(s,file), os.path.join(d,file))	
 
-def CopyDir (s, d, dir):
-	shutil.copytree(os.path.join(s,dir), os.path.join(d,dir), symlinks=False, ignore=shutil.ignore_patterns('\.*'))		
+def CopyFile (s, d, f):
+	shutil.copy2(os.path.join(s,f), os.path.join(d,f))	
 
-def MergeIf(s, d, dir):
-# 	if dir == 'detail':
-# 		print "MergeIf %s -> %s" % (os.path.join(s, dir), os.path.join(d, dir))
-	if os.path.exists(os.path.join(s, dir)):
-		mergetree(os.path.join(s, dir), os.path.join(d, dir), symlinks=False, ignore=shutil.ignore_patterns('\.*'))
+def CopyDir (s, d, dd):
+	shutil.copytree(os.path.join(s,dd), os.path.join(d,dd), symlinks=False, ignore=shutil.ignore_patterns('\.*'))		
+
+def MergeIf(s, d, dd):
+# 	if dd == 'detail':
+# 		print "MergeIf %s -> %s" % (os.path.join(s, dd), os.path.join(d, dd))
+	if os.path.exists(os.path.join(s, dd)):
+		mergetree(os.path.join(s, dd), os.path.join(d, dd), symlinks=False, ignore=shutil.ignore_patterns('\.*'))
 
 def CopyInclude(src, dst):
 	for item in os.listdir(src):
@@ -74,10 +75,10 @@ def CopyInclude(src, dst):
 	
 
 def CopySubProject(src, dst, headers, p):
-#	First, everything except the "include" directory
+	#	First, everything except the "include" directory
 	Source = os.path.join(src,p)
 	Dest   = os.path.join(dst,p)
-#	print "CopySubProject %p" % p
+	#	print "CopySubProject %p" % p
 	os.makedirs(Dest)
 	items  = [ f for f in os.listdir(Source) if f[0] != '.' ]
 	for item in items:
@@ -86,9 +87,9 @@ def CopySubProject(src, dst, headers, p):
 		elif item != "include":
 			CopyDir(Source, Dest, item)
 			
-#	shutil.copytree(Source, Dest, symlinks=False, ignore=shutil.ignore_patterns('\.*', "include"))	
+	#shutil.copytree(Source, Dest, symlinks=False, ignore=shutil.ignore_patterns('\.*', "include"))	
 
-# Now the includes
+	# Now the includes
 	Source = os.path.join(src, "%s/include/boost" % p)
 	CopyInclude(Source, headers)
 # 	mergetree(Source, Dest, symlinks=False, ignore=shutil.ignore_patterns('\.*', 'detail', 'pending'))
@@ -97,56 +98,30 @@ def CopySubProject(src, dst, headers, p):
 	
 
 def CopyNestedProject(src, dst, headers, p):
-#	First, everything except the "include" directory
-	Source = os.path.join(src,p)
-	Dest   = os.path.join(dst,p)
+	#	First, everything except the "include" directory
+	Source = os.path.join(src,p[1])
+	Dest   = os.path.join(dst,p[1])
 	os.makedirs(Dest)
 	items  = [ f for f in os.listdir(Source) if f[0] != '.' ]
 	for item in items:
 		if os.path.isfile(os.path.join(Source, item)):
 			CopyFile(Source, Dest, item)
 		elif item != "include":
-			CopyDir(Source, Dest, item)			
-# 	shutil.copytree(Source, Dest, symlinks=False, ignore=shutil.ignore_patterns('\.*', "include"))	
+			CopyDir(Source, Dest, item)
+	# 	shutil.copytree(Source, Dest, symlinks=False, ignore=shutil.ignore_patterns('\.*', "include"))
 
- 	Source = os.path.join(src, "%s/include/boost/numeric" % p)
-#  	Dest = os.path.join(headers, p)
-# 	print "Installing headers from %s to %s" % (Source, headers)
+	Source = os.path.join(src, "%s/include/boost/%s" % (p[1],p[0]))
+	#  	Dest = os.path.join(headers, p)
+	# 	print "Installing headers from %s to %s" % (Source, headers)
 	CopyInclude(Source, headers)
-# # 	mergetree(Source, Dest, symlinks=False, ignore=shutil.ignore_patterns('\.*', 'detail', 'pending'))
-# 	MergeIf(Source, headers, 'detail')
-# 	MergeIf(Source, headers, 'pending')
-	return
+	# # 	mergetree(Source, Dest, symlinks=False, ignore=shutil.ignore_patterns('\.*', 'detail', 'pending'))
+	# 	MergeIf(Source, headers, 'detail')
+	# 	MergeIf(Source, headers, 'pending')
 
 BoostHeaders = "boost"
 BoostLibs = "libs"
 
 BoostSpecialFolders = [ "doc", "more", "status", "tools" ]
-BoostSubProjects = [
-	"accumulators", "align", "algorithm", "any", "array", "asio", "assert", "assign", "atomic", 
-	"bimap", "bind", 
-	"chrono", "circular_buffer", "compatibility", "concept_check", "config", "container", "context", "conversion", "convert", "core", "coroutine", "coroutine2", "crc",
-	"date_time", "detail", "disjoint_sets", "dynamic_bitset",
-	"endian", "exception",
-	"filesystem", "flyweight", "foreach", "format", "function", "function_types", "functional", "fusion",
-	"geometry", "gil", "graph", "graph_parallel",
-	"heap",
-	"icl", "integer", "interprocess", "intrusive", "io", "iostreams", "iterator",
-	"lambda", "lexical_cast", "local_function", "locale", "lockfree", "log", "logic",
-	"math", "move", "mpi", "mpl", "msm", "multi_array", "multi_index", "multiprecision", 
-#	"numeric",
-	"optional",
-	"parameter", "phoenix", "polygon", "pool", "predef", "preprocessor", "program_options", "property_map", "property_tree", "proto", "ptr_container", "python",
-	"random", "range", "ratio", "rational", "regex",
-	"scope_exit", "serialization", "signals", "signals2", "smart_ptr", "sort", "spirit", "statechart", "static_assert", "system",
-	"test", "thread", "throw_exception", "timer", "tokenizer", "tr1", "tti", "tuple", "type_index", "type_erasure", "type_traits", "typeof",
-	"units", "unordered", "utility", "uuid",
-	"variant", "vmd",
-	"wave", "winapi",
-	"xpressive"
-]
-
-NumericLibs = [ "conversion", "interval", "odeint", "ublas" ]
 
 SourceRoot = sys.argv[1]
 DestRoot   = sys.argv[2]
@@ -182,18 +157,34 @@ files = [ f for f in os.listdir(SourceLibs) if os.path.isfile(os.path.join(Sourc
 for f in files:
 	CopyFile(SourceLibs, DestLibs, f)
 
-for p in BoostSubProjects:
-	CopySubProject(SourceLibs, DestLibs, DestHeaders, p)
- 
-# ## Step 4
-NumericSource  = os.path.join(SourceRoot, "libs/numeric")
-NumericDest    = os.path.join(DestRoot,   "libs/numeric")
-NumericHeaders = os.path.join(DestRoot,   "boost/numeric")
-os.makedirs(NumericDest)
-os.makedirs(NumericHeaders)
-files = [ f for f in os.listdir(NumericSource) if os.path.isfile(os.path.join(NumericSource,f)) and f[0] != '.' ]
-for f in files:
-	CopyFile(NumericSource, NumericDest, f)
-for p in NumericLibs:
-	CopyNestedProject (NumericSource, NumericDest, NumericHeaders, p)
+## Step 4
+BoostSubProjects = set()
+for f in os.listdir(SourceLibs):
+	if os.path.isdir(os.path.join(SourceLibs,f)):
+		if os.path.isfile(os.path.join(SourceLibs,f,"meta","libraries.json")):
+			BoostSubProjects.add(f)
+		elif os.path.isdir(os.path.join(SourceLibs,f,"include")):
+			BoostSubProjects.add(f)
+		elif os.path.isfile(os.path.join(SourceLibs,f,"sublibs")):
+			for s in os.listdir(os.path.join(SourceLibs,f)):
+				if os.path.isdir(os.path.join(SourceLibs,f,s)):
+					if os.path.isfile(os.path.join(SourceLibs,f,s,"meta","libraries.json")):
+						BoostSubProjects.add((f,s))
+					elif os.path.isdir(os.path.join(SourceLibs,f,s,"include")):
+						BoostSubProjects.add((f,s))
 
+for p in BoostSubProjects:
+	if isinstance(p, basestring):
+		CopySubProject(SourceLibs, DestLibs, DestHeaders, p)
+	else:
+		NestedSource  = os.path.join(SourceRoot,"libs",p[0])
+		NestedDest    = os.path.join(DestRoot,"libs",p[0])
+		NestedHeaders = os.path.join(DestRoot,"boost",p[0])
+		if not os.path.exists(NestedDest):
+			os.makedirs(NestedDest)
+		if not os.path.exists(NestedHeaders):
+			os.makedirs(NestedHeaders)
+		files = [ f for f in os.listdir(NestedSource) if os.path.isfile(os.path.join(NestedSource,f)) and f[0] != '.' ]
+		for f in files:
+			CopyFile(NestedSource, NestedDest, f)
+		CopyNestedProject(NestedSource, NestedDest, NestedHeaders, p)
