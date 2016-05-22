@@ -323,7 +323,7 @@ class script:
         
         # Make the real distribution tree from the base tree.
         os.chdir(os.path.join(self.build_dir))
-        utils.check_call('wget','"https://raw.githubusercontent.com/boostorg/release-tools/develop/MakeBoostDistro.py"')
+        utils.check_call('wget','https://raw.githubusercontent.com/boostorg/release-tools/develop/MakeBoostDistro.py')
         utils.check_call('chmod','+x','MakeBoostDistro.py')
         os.chdir(os.path.dirname(self.root_dir))
         utils.check_call('python',os.path.join(self.build_dir,'MakeBoostDistro.py'),
