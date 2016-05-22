@@ -320,7 +320,11 @@ class script:
             time.sleep(3*60)
             print("Building.")
         doc_build.join()
-        
+
+        # Download the library list.
+        os.chdir(self.root_dir)
+        utils.check_call('wget', '-O', 'libs/libraries.htm', 'http://www.boost.org/doc/generate.php?page=libs/libraries.htm&version=%s'%(self.branch));
+
         # Make the real distribution tree from the base tree.
         os.chdir(os.path.join(self.build_dir))
         utils.check_call('wget','https://raw.githubusercontent.com/boostorg/release-tools/develop/MakeBoostDistro.py')
