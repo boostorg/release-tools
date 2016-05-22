@@ -17,7 +17,6 @@ import subprocess
 import codecs
 import shutil
 import threading
-import pprint
 
 class SystemCallError(Exception):
     def __init__(self, command, result):
@@ -186,10 +185,23 @@ class script:
         opt.add_option( '--debug-level',
             help="debugging level; controls the amount of debugging output printed",
             type='int' )
+        
+        opt.add_option( '-j',
+            help="maximum number of parallel jobs to use for building with b2",
+            type='int', dest='jobs')
+        
+        opt.add_option( '--eof',
+            help='type of EOLs to check out files as for packaging (LF or CRLF)')
+        
+        opt.add_option('--branch')
+        opt.add_option('--commit')
 
         #~ Defaults
         self.debug_level=0
         self.eof=os.getenv('RELEASE_BUILD', 'LF')
+        self.jobs=3
+        self.branch = branch
+        self.commit = commit
         ( _opt_, self.actions ) = opt.parse_args(None,self)
         if not self.actions or self.actions == []:
             self.actions = [ 'info' ]
@@ -199,8 +211,6 @@ class script:
             self.root_dir = root_dir
         self.build_dir = os.path.join(os.path.dirname(self.root_dir), "build")
         self.home_dir = os.path.expanduser('~')
-        self.branch = branch
-        self.commit = commit
         
         #~ Read in the Boost version from the repo we are in.
         self.boost_version = branch
@@ -227,6 +237,7 @@ class script:
         pass
     
     def command_base_install(self):
+        utils.makedirs(self.build_dir)
         os.chdir(self.build_dir)
         # We use RapidXML for some doc building tools.
         utils.check_call("wget","-O","rapidxml.zip","http://sourceforge.net/projects/rapidxml/files/latest/download")
@@ -268,22 +279,22 @@ class script:
         
         # Generate include dir structure.
         os.chdir(self.root_dir)
-        utils.check_call("b2","-q","-d0","-j3","headers")
+        self.b2("-q","-d0","headers")
         
         # Build doxygen_xml2qbk for building Boost Geometry docs.
         os.chdir(os.path.join(self.root_dir,"libs","geometry","doc","src","docutils","tools","doxygen_xml2qbk"))
-        utils.check_call('b2','-q','-d0','-j3','--build-dir="%s"'%(self.build_dir),'--distdir="%s"'%(os.path.join(self.build_dir,'dist')))
+        self.b2('-q','-d0','--build-dir=%s'%(self.build_dir),'--distdir=%s'%(os.path.join(self.build_dir,'dist')))
         os.chdir(os.path.join(self.root_dir,"libs","geometry"))
         utils.check_call("git","clean","-dfqx")
         
         # Build Quickbook documentation tool.
         os.chdir(os.path.join(self.root_dir,"tools","quickbook"))
-        utils.check_call('b2','-q','-d0','-j3','--build-dir="%s"'%(self.build_dir),'--distdir="%s"'%(os.path.join(self.build_dir,'dist')))
+        self.b2('-q','-d0','--build-dir=%s'%(self.build_dir),'--distdir=%s'%(os.path.join(self.build_dir,'dist')))
         utils.check_call("git","clean","-dfqx")
         
         # Build auto-index documentation tool.
         os.chdir(os.path.join(self.root_dir,"tools","auto_index","build"))
-        utils.check_call('b2','-q','-d0','-j3','--build-dir="%s"'%(self.build_dir),'--distdir="%s"'%(os.path.join(self.build_dir,'dist')))
+        self.b2('-q','-d0','--build-dir=%s'%(self.build_dir),'--distdir=%s'%(os.path.join(self.build_dir,'dist')))
         os.chdir(os.path.join(self.root_dir,"tools","auto_index"))
         utils.check_call("git","clean","-dfqx")
         
@@ -300,10 +311,11 @@ class script:
         
         # Build the full docs, and all the submodule docs.
         os.chdir(os.path.join(self.root_dir,"doc"))
-        doc_build = parallel_call('b2','-q','-d0','-j3',
-            '--build-dir="%s"'%(self.build_dir),
-            '--distdir="%s"'%(os.path.join(self.build_dir,'dist')),
-            '--release-build','--enable-index')
+        doc_build = self.b2('-q','-d0',
+            '--build-dir=%s'%(self.build_dir),
+            '--distdir=%s'%(os.path.join(self.build_dir,'dist')),
+            '--release-build','--enable-index',
+            parallel=True)
         while doc_build.is_alive():
             time.sleep(3*60)
             print("Building.")
@@ -364,6 +376,18 @@ class script:
             action_m = "command_"+action.replace('-','_')
             if hasattr(self,action_m):
                 getattr(self,action_m)()
+    
+    def b2( self, *args, **kargs ):
+        cmd = ['b2','--debug-configuration', '-j%s'%(self.jobs)]
+        cmd.extend(args)
+
+        if 'toolset' in kargs:
+            cmd.append('toolset=' + kargs['toolset'])
+
+        if 'parallel' in kargs:
+            return parallel_call(*cmd)
+        else:
+            return utils.check_call(*cmd)
 
 class script_travis(script):
 
