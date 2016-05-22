@@ -255,7 +255,7 @@ class script:
             utils.check_call("git","config","--global","core.autocrlf","input")
         else:
             utils.check_call("git","config","--global","core.eol","crlf")
-            utils.check_call("git","config","--global","core.autocrlf true")
+            utils.check_call("git","config","--global","core.autocrlf","true")
         utils.check_call("git","rm","--cache","-r",".")
         utils.check_call("git","reset","--quiet","--hard","HEAD")
         utils.check_call("git","submodule","update","--init","--recursive")
