@@ -343,7 +343,8 @@ class script:
         if self.eof == 'CRLF':
             os.chdir(os.path.dirname(self.root_dir))
             utils.check_call('zip','-qr','%s.zip'%(self.boost_release_name),self.boost_release_name)
-            utils.check_call('7z','-a','-r','%s.7z'%(self.boost_release_name),self.boost_release_name,'>/dev/null')
+            utils.check_call('7z','a','-bd','-m0=lzma','-mx=9','-mfb=64','-md=32m','-ms=on',
+                '%s.7z'%(self.boost_release_name),self.boost_release_name)
         
         # List the results for debugging.
         utils.check_call('ls','-la')
