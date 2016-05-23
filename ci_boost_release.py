@@ -191,7 +191,7 @@ class script:
             help="maximum number of parallel jobs to use for building with b2",
             type='int', dest='jobs')
         
-        opt.add_option( '--eof',
+        opt.add_option( '--eol',
             help='type of EOLs to check out files as for packaging (LF or CRLF)')
         
         opt.add_option('--branch')
@@ -257,9 +257,10 @@ class script:
         else:
             utils.check_call("git","config","--global","core.eol","crlf")
             utils.check_call("git","config","--global","core.autocrlf","true")
-        utils.check_call("git","rm","--cache","-r",".")
+        utils.check_call("git","rm","--quiet","--cache","-r",".")
         utils.check_call("git","reset","--quiet","--hard","HEAD")
-        utils.check_call("git","submodule","update","--init","--recursive")
+        utils.check_call("git","submodule","--quiet","foreach","--recursive","git","rm","--quiet","--cache","-r",".")
+        utils.check_call("git","submodule","--quiet","foreach","--recursive","git","reset","--quiet","--hard","HEAD")
 
     def command_base_build(self):
         # Build a packaged release. This involves building a fresh set
