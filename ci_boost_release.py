@@ -28,16 +28,16 @@ class SystemCallError(Exception):
 class utils:
     
     @staticmethod
-    def call(*command):
+    def call(*command, **kargs):
         utils.log( "%s> '%s'"%(os.getcwd(), "' '".join(command)) )
-        result = subprocess.call(command)
+        result = subprocess.call(command, **kargs)
         if result != 0:
             print "Failed: '%s' ERROR = %s"%("' '".join(command), result)
         return result
     
     @staticmethod
-    def check_call(*command):
-        result = utils.call(*command)
+    def check_call(*command, **kargs):
+        result = utils.call(*command, **kargs)
         if result != 0:
             raise(SystemCallError(command, result))
     
@@ -155,13 +155,14 @@ class utils:
 
 class parallel_call(threading.Thread):
     
-    def __init__(self, *command):
+    def __init__(self, *command, **kargs):
         super(parallel_call,self).__init__()
         self.command = command
+        self.command_kargs = kargs
         self.start()
     
     def run(self):
-        self.result = utils.call(*self.command)
+        self.result = utils.call(*self.command, **self.command_kargs)
     
     def join(self):
         super(parallel_call,self).join()
@@ -343,8 +344,9 @@ class script:
         if self.eof == 'CRLF':
             os.chdir(os.path.dirname(self.root_dir))
             utils.check_call('zip','-qr','%s.zip'%(self.boost_release_name),self.boost_release_name)
-            utils.check_call('7z','a','-bd','-m0=lzma','-mx=9','-mfb=64','-md=32m','-ms=on',
-                '%s.7z'%(self.boost_release_name),self.boost_release_name)
+            with open('/dev/null') as dev_null:
+                utils.check_call('7z','a','-bd','-m0=lzma','-mx=9','-mfb=64','-md=32m','-ms=on',
+                    '%s.7z'%(self.boost_release_name),self.boost_release_name, stdout=dev_null)
         
         # List the results for debugging.
         utils.check_call('ls','-la')
