@@ -361,11 +361,8 @@ class script:
 
     def command_base_publish(self):
         # Publish created packages depending on the EOL style and branch.
-        # We post archives to distribution services. But currently we only
-        # post master packages as they happen less often. And we are
-        # unlikely to ever want anything else as a package for the
-        # releases.
-        if self.branch != 'master':
+        # We post archives to distribution services.
+        if self.branch not in ['master', 'develop']:
             return
         
         if self.eol == 'LF':
