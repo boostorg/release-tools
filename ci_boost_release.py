@@ -199,7 +199,7 @@ class script:
 
         #~ Defaults
         self.debug_level=0
-        self.eof=os.getenv('RELEASE_BUILD', 'LF')
+        self.eol=os.getenv('RELEASE_BUILD', 'LF')
         self.jobs=3
         self.branch = branch
         self.commit = commit
@@ -251,7 +251,7 @@ class script:
     def command_base_before_build(self):
         # Fetch the rest of the Boost submodules in the appropriate
         # EOL style.
-        if self.eof == 'LF':
+        if self.eol == 'LF':
             utils.check_call("git","config","--global","core.eol","lf")
             utils.check_call("git","config","--global","core.autocrlf","input")
         else:
@@ -335,13 +335,13 @@ class script:
             self.root_dir,self.boost_release_name)
         
         # Create packages for LF style content.
-        if self.eof == 'LF':
+        if self.eol == 'LF':
             os.chdir(os.path.dirname(self.root_dir))
             utils.check_call('tar','-zcf','%s.tar.gz'%(self.boost_release_name),self.boost_release_name)
             utils.check_call('tar','-cjf','%s.tar.bz2'%(self.boost_release_name),self.boost_release_name)
         
         # Create packages for CRLF style content.
-        if self.eof == 'CRLF':
+        if self.eol == 'CRLF':
             os.chdir(os.path.dirname(self.root_dir))
             utils.check_call('zip','-qr','%s.zip'%(self.boost_release_name),self.boost_release_name)
             with open('/dev/null') as dev_null:
