@@ -227,8 +227,9 @@ class script:
         # The basename we will use for the release archive.
         self.boost_release_name = 'boost_'+self.boost_version.replace('.','_')
         
-        # Special Bintray key.
+        # API keys.
         self.bintray_key = os.getenv('BINTRAY')
+        self.sf_releases_key = os.getenv('SF_RELEASES_KEY')
 
         self.main()
 
@@ -355,13 +356,16 @@ class script:
     def upload_archives(self, *filenames):
         curl_cfg = os.path.join(self.build_dir,'curl.cfg')
         utils.make_file(curl_cfg,
-            'user = "%s:%s"'%('grafikrobot',self.bintray_key))
+            'data = "api_key=%s"'%(self.sf_releases_key))
         uploads = []
         for filename in filenames:
             uploads.append(parallel_call('curl',
                 '-K',curl_cfg,
+                '-H','Accept: application/json',
+                '-X','PUT',
+                '-d','default=windows&default=mac&default=linux&default=bsd&default=solaris&default=others',
                 '-T',filename,
-                'https://api.bintray.com/content/boostorg/snapshots/%s/%s/%s?publish=1&override=1'%(
+                'https://sourceforge.net/projects/boost/files/snapshots/%s/%s/%s'%(
                     self.branch,self.commit,filename)))
         for upload in uploads:
             upload.join()
