@@ -228,7 +228,7 @@ class script:
         self.boost_release_name = 'boost_'+self.boost_version.replace('.','_')
         
         # API keys.
-        self.bintray_key = os.getenv('BINTRAY')
+        self.bintray_key = os.getenv('BINTRAY_KEY')
         self.sf_releases_key = os.getenv('SF_RELEASES_KEY')
 
         self.main()
@@ -375,6 +375,10 @@ class script:
                     'https://sourceforge.net/projects/boost/files/snapshots/%s/%s/%s'%(
                         self.branch,self.commit,filename)))
             else:
+                utils.check_call('curl',
+                    '-X','DELETE',
+                    'https://api.bintray.com/content/boostorg/snapshots/%s/%s'%(
+                        self.branch,filename))
                 uploads.append(parallel_call('curl',
                     '-K',curl_cfg,
                     '-T',filename,
