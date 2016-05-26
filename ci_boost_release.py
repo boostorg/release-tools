@@ -376,6 +376,7 @@ class script:
                         self.branch,self.commit,filename)))
             else:
                 utils.check_call('curl',
+                    '-K',curl_cfg,
                     '-X','DELETE',
                     'https://api.bintray.com/content/boostorg/snapshots/%s/%s'%(
                         self.branch,filename))
