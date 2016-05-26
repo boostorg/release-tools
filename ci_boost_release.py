@@ -375,10 +375,13 @@ class script:
                     'https://sourceforge.net/projects/boost/files/snapshots/%s/%s/%s'%(
                         self.branch,self.commit,filename)))
             else:
+                # You'd think that we would need to specify api.bintray.com/content/boostorg/snapshots
+                # as the root path to delete the existing archive. But Bintray has an API
+                # (where A == asymetric), and hence nothing is intuitive.
                 utils.check_call('curl',
                     '-K',curl_cfg,
                     '-X','DELETE',
-                    'https://api.bintray.com/content/boostorg/snapshots/%s/%s'%(
+                    'https://api.bintray.com/content/boostorg/%s/%s'%(
                         self.branch,filename))
                 uploads.append(parallel_call('curl',
                     '-K',curl_cfg,
