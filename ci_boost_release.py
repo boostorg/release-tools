@@ -30,9 +30,12 @@ class utils:
     @staticmethod
     def call(*command, **kargs):
         utils.log( "%s> '%s'"%(os.getcwd(), "' '".join(command)) )
+        t = time.clock()
         result = subprocess.call(command, **kargs)
+        t = time.clock()-t
         if result != 0:
             print "Failed: '%s' ERROR = %s"%("' '".join(command), result)
+        utils.log( "%s> '%s' execution time %s seconds"%(os.getcwd(), "' '".join(command), t) )
         return result
     
     @staticmethod
@@ -244,7 +247,6 @@ class script:
         # We use RapidXML for some doc building tools.
         utils.check_call("wget","-O","rapidxml.zip","http://sourceforge.net/projects/rapidxml/files/latest/download")
         utils.check_call("unzip","-n","-d","rapidxml","rapidxml.zip")
-        # export RAPIDXML=`ls -1d ${PWD}/rapidxml/rapidxml-*`
         # Need docutils for building some docs.
         utils.check_call("sudo","pip","install","docutils")
         os.chdir(self.root_dir)
@@ -336,19 +338,24 @@ class script:
         utils.check_call('python',os.path.join(self.build_dir,'MakeBoostDistro.py'),
             self.root_dir,self.boost_release_name)
         
+        packages = []
+        
         # Create packages for LF style content.
         if self.eol == 'LF':
             os.chdir(os.path.dirname(self.root_dir))
-            utils.check_call('tar','-zcf','%s.tar.gz'%(self.boost_release_name),self.boost_release_name)
-            utils.check_call('tar','-cjf','%s.tar.bz2'%(self.boost_release_name),self.boost_release_name)
+            packages.append(parallel_call('tar','-zcf','%s.tar.gz'%(self.boost_release_name),self.boost_release_name))
+            packages.append(parallel_call('tar','-cjf','%s.tar.bz2'%(self.boost_release_name),self.boost_release_name))
         
         # Create packages for CRLF style content.
         if self.eol == 'CRLF':
             os.chdir(os.path.dirname(self.root_dir))
-            utils.check_call('zip','-qr','%s.zip'%(self.boost_release_name),self.boost_release_name)
+            packages.append(parallel_call('zip','-qr','%s.zip'%(self.boost_release_name),self.boost_release_name))
             with open('/dev/null') as dev_null:
                 utils.check_call('7z','a','-bd','-m0=lzma','-mx=9','-mfb=64','-md=32m','-ms=on',
                     '%s.7z'%(self.boost_release_name),self.boost_release_name, stdout=dev_null)
+        
+        for package in packages:
+            package.join()
         
         # List the results for debugging.
         utils.check_call('ls','-la')
@@ -429,6 +436,11 @@ class script:
             return parallel_call(*cmd)
         else:
             return utils.check_call(*cmd)
+
+class script_cli(script):
+    
+    def __init__(self):
+        super(script_cli,self).__init__()
 
 class script_travis(script):
 
