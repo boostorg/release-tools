@@ -30,9 +30,9 @@ class utils:
     @staticmethod
     def call(*command, **kargs):
         utils.log( "%s> '%s'"%(os.getcwd(), "' '".join(command)) )
-        t = time.clock()
+        t = time.time()
         result = subprocess.call(command, **kargs)
-        t = time.clock()-t
+        t = time.time()-t
         if result != 0:
             print "Failed: '%s' ERROR = %s"%("' '".join(command), result)
         utils.log( "%s> '%s' execution time %s seconds"%(os.getcwd(), "' '".join(command), t) )
