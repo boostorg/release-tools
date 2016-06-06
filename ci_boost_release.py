@@ -40,9 +40,10 @@ class utils:
     
     @staticmethod
     def check_call(*command, **kargs):
+        cwd = os.getcwd()
         result = utils.call(*command, **kargs)
         if result != 0:
-            raise(SystemCallError(command, result))
+            raise(SystemCallError([cwd]+command, result))
     
     @staticmethod
     def makedirs( path ):
@@ -173,8 +174,13 @@ class parallel_call(threading.Thread):
             raise(SystemCallError(self.command, self.result))
 
 class script:
+    '''
+    Main script to build Boost C++ Libraries continuous releases. This base
+    is not usable by itself, as it needs some setup for the particular CI
+    environment before execution.
+    '''
 
-    def __init__(self, root_dir = None, branch = None, commit = None, test_args = []):
+    def __init__(self, root_dir = None, branch = None, commit = None, actions = None):
         commands = [];
         for method in inspect.getmembers(self, predicate=inspect.ismethod):
             if method[0].startswith('command_'):
@@ -208,7 +214,10 @@ class script:
         self.commit = commit
         ( _opt_, self.actions ) = opt.parse_args(None,self)
         if not self.actions or self.actions == []:
-            self.actions = [ 'info' ]
+            if actions:
+                self.actions = actions
+            else:
+                self.actions = [ 'info' ]
         if not root_dir:
             self.root_dir = os.getcwd()
         else:
@@ -218,12 +227,13 @@ class script:
         
         #~ Read in the Boost version from the repo we are in.
         self.boost_version = branch
-        with codecs.open(os.path.join(self.root_dir,'Jamroot'), 'r', 'utf-8') as f:
-            for line in f.readlines():
-                parts = line.split()
-                if len(parts) >= 5 and parts[1] == 'BOOST_VERSION':
-                    self.boost_version = parts[3]
-                    break
+        if os.path.exists(os.path.join(self.root_dir,'Jamroot')):
+            with codecs.open(os.path.join(self.root_dir,'Jamroot'), 'r', 'utf-8') as f:
+                for line in f.readlines():
+                    parts = line.split()
+                    if len(parts) >= 5 and parts[1] == 'BOOST_VERSION':
+                        self.boost_version = parts[3]
+                        break
         if not self.boost_version:
             self.boost_version = 'default'
         
@@ -244,12 +254,34 @@ class script:
     def command_base_install(self):
         utils.makedirs(self.build_dir)
         os.chdir(self.build_dir)
+        self.command_base_install_rapidxml()
+        self.command_base_install_docutils()
+        self.command_base_install_docbook()
+    
+    def command_base_install_rapidxml(self):
+        os.chdir(self.build_dir)
         # We use RapidXML for some doc building tools.
-        utils.check_call("wget","-O","rapidxml.zip","http://sourceforge.net/projects/rapidxml/files/latest/download")
-        utils.check_call("unzip","-n","-d","rapidxml","rapidxml.zip")
+        if not os.path.exists(os.path.join(self.build_dir,'rapidxml.zip')):
+            utils.check_call("wget","-O","rapidxml.zip","http://sourceforge.net/projects/rapidxml/files/latest/download")
+            utils.check_call("unzip","-n","-d","rapidxml","rapidxml.zip")
+    
+    def command_base_install_docutils(self):
+        os.chdir(self.build_dir)
         # Need docutils for building some docs.
         utils.check_call("sudo","pip","install","docutils")
         os.chdir(self.root_dir)
+    
+    def command_base_install_docbook(self):
+        os.chdir(self.build_dir)
+        # Local DocBook schema and stylesheets.
+        if not os.path.exists(os.path.join(self.build_dir,'docbook-xml.zip')):
+            utils.check_call("wget","-O","docbook-xml.zip","http://www.docbook.org/xml/4.5/docbook-xml-4.5.zip")
+            utils.check_call("unzip","-n","-d","docbook-xml","docbook-xml.zip")
+        os.environ['DOCBOOK_DTD_DIR'] = os.path.join(self.build_dir,'docbook-xml')
+        if not os.path.exists(os.path.join(self.build_dir,'docbook-xsl.zip')):
+            utils.check_call("wget","-O","docbook-xsl.zip","https://sourceforge.net/projects/docbook/files/docbook-xsl/1.79.1/docbook-xsl-1.79.1.zip/download")
+            utils.check_call("unzip","-n","-d","docbook-xsl","docbook-xsl.zip")
+        os.environ['DOCBOOK_XSL_DIR'] = os.path.join(self.build_dir,'docbook-xsl','docbook-xsl-1.79.1')
     
     def command_base_before_build(self):
         # Fetch the rest of the Boost submodules in the appropriate
@@ -275,6 +307,7 @@ class script:
         # Set up where we will "install" built tools.
         utils.makedirs(os.path.join(self.build_dir,'dist','bin'))
         os.environ['PATH'] = os.path.join(self.build_dir,'dist','bin')+':'+os.environ['PATH']
+        os.environ['BOOST_BUILD_PATH'] = self.build_dir
         
         # Bootstrap Boost Build engine.
         os.chdir(os.path.join(self.root_dir,"tools","build"))
@@ -304,7 +337,7 @@ class script:
         utils.check_call("git","clean","-dfqx")
         
         # Set up build config.
-        utils.make_file(os.path.join(self.home_dir,'user-config.jam'),
+        utils.make_file(os.path.join(self.build_dir,'site-config.jam'),
             'using quickbook : "%s" ;'%(os.path.join(self.build_dir,'dist','bin','quickbook')),
             'using auto-index : "%s" ;'%(os.path.join(self.build_dir,'dist','bin','auto_index')),
             'using docutils ;',
@@ -423,6 +456,9 @@ class script:
         for action in self.actions:
             action_m = "command_"+action.replace('-','_')
             if hasattr(self,action_m):
+                utils.log( "### %s.."%(action) )
+                if os.path.exists(self.root_dir):
+                    os.chdir(self.root_dir)
                 getattr(self,action_m)()
     
     def b2( self, *args, **kargs ):
@@ -438,11 +474,78 @@ class script:
             return utils.check_call(*cmd)
 
 class script_cli(script):
+    '''
+    This version of the script provides a way to do manual building. It sets up
+    additional environment and adds fetching of the git repos that would
+    normally be done by the CI system. But it still has some pre-setup
+    requirements. In particular Doxygen, LaTeX, XSLT, and the various
+    compression programs need to already be installed. For some platforms
+    this tries to find the tools in common install locations. But if it
+    doesn't find them it will assume they are already available in the path.
+    
+    The common way to use this variant is to invoke something like:
+    
+        mkdir boost-ci-release-build
+        cd boost-ci-release-build
+        python path-to/ci_boost_release.py --branch=develop
+    
+    Note: This variant does everything except upload the resulting archives.
+    Status: In working order.
+    '''
     
     def __init__(self):
-        super(script_cli,self).__init__()
+        if sys.platform == 'darwin':
+            # Requirements for running on OSX:
+            # https://www.stack.nl/~dimitri/doxygen/download.html#srcbin
+            # https://tug.org/mactex/morepackages.html
+            doxygen_path = "/Applications/Doxygen.app/Contents/Resources"
+            if os.path.isdir(doxygen_path):
+                os.environ["PATH"] = doxygen_path+':'+os.environ['PATH']
+        script.__init__(self)
+        self.clone()
+        self.actions = [
+            'install',
+            'before_build',
+            'build',
+            # 'publish',
+            ]
+        self.main()
+    
+    def clone(self):
+        cwd = os.getcwd()
+        self.root_dir = os.path.join(cwd,'boostorg','boost')
+        self.build_dir = os.path.join(os.path.dirname(self.root_dir), "build")
+        if not os.path.exists(os.path.join(self.root_dir,'.git')):
+            utils.check_call("git","clone","--depth=50","--branch=%s"%(self.branch),"https://github.com/boostorg/boost.git","boostorg/boost")
+            os.chdir(self.root_dir)
+        else:
+            os.chdir(self.root_dir)
+            utils.check_call("git","pull","--quiet","--no-recurse-submodules","--depth=50")
+        if self.commit:
+            utils.check_call("git","checkout","-qf",self.commit)
+        utils.check_call("git","submodule","update","--quiet","--init","--recursive")
+    
+    def command_base_install_docutils(self):
+        pass
+    
+    def command_install(self):
+        self.command_base_install()
+    
+    def command_before_build(self):
+        self.command_base_before_build()
+    
+    def command_build(self):
+        self.command_base_build()
+    
+    def command_publish(self):
+        self.command_base_publish()
 
 class script_travis(script):
+    '''
+    This variant build releases in the context of the Travis-CI service.
+    
+    Status: In working order.
+    '''
 
     def __init__(self):
         script.__init__(self,
@@ -479,48 +582,22 @@ class script_travis(script):
     def command_after_script(self):
         pass
 
-class script_appveyor(script):
+class script_circleci(script):
+    '''
+    This variant build releases in the context of the CircleCI service.
     
-    def __init__(self):
+    Status: Untested.
+    '''
+    
+    def __init(self):
         script.__init__(self,
-            root_dir=os.getenv("APPVEYOR_BUILD_FOLDER"))
-    
-    # Appveyor commands in the order they are executed..
-    
-    def command_install(self):
-        pass
-    
-    def command_before_build(self):
-        pass
-    
-    def command_build_script(self):
-        pass
-    
-    def command_after_build(self):
-        pass
-    
-    def command_before_test(self):
-        pass
-    
-    def command_test_script(self):
-        pass
-    
-    def command_after_test(self):
-        pass
-    
-    def command_on_success(self):
-        pass
-    
-    def command_on_failure(self):
-        pass
-    
-    def command_on_finish(self):
-        pass
+            branch=os.getenv("CIRCLE_BRANCH"),
+            commit=os.getenv("CIRCLE_SHA1"))
 
-if os.getenv('APPVEYOR', False):
-    script_appveyor()
-elif os.getenv('TRAVIS', False):
+if os.getenv('TRAVIS', False):
     script_travis()
+elif os.getenv('CIRCLECI', False):
+    script_circleci()
 else:
-    script()
+    script_cli()
 
