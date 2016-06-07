@@ -341,7 +341,8 @@ class script:
             'using quickbook : "%s" ;'%(os.path.join(self.build_dir,'dist','bin','quickbook')),
             'using auto-index : "%s" ;'%(os.path.join(self.build_dir,'dist','bin','auto_index')),
             'using docutils ;',
-            'using doxygen ;')
+            'using doxygen ;',
+            'using boostbook : "%s" : "%s" ;'%(os.environ['DOCBOOK_XSL_DIR'],os.environ['DOCBOOK_DTD_DIR']))
         
         # Pre-build Boost Geometry docs.
         os.chdir(os.path.join(self.root_dir,"libs","geometry","doc"))
