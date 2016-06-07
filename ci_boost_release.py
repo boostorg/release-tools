@@ -277,11 +277,9 @@ class script:
         if not os.path.exists(os.path.join(self.build_dir,'docbook-xml.zip')):
             utils.check_call("wget","-O","docbook-xml.zip","http://www.docbook.org/xml/4.5/docbook-xml-4.5.zip")
             utils.check_call("unzip","-n","-d","docbook-xml","docbook-xml.zip")
-        os.environ['DOCBOOK_DTD_DIR'] = os.path.join(self.build_dir,'docbook-xml')
         if not os.path.exists(os.path.join(self.build_dir,'docbook-xsl.zip')):
             utils.check_call("wget","-O","docbook-xsl.zip","https://sourceforge.net/projects/docbook/files/docbook-xsl/1.79.1/docbook-xsl-1.79.1.zip/download")
             utils.check_call("unzip","-n","-d","docbook-xsl","docbook-xsl.zip")
-        os.environ['DOCBOOK_XSL_DIR'] = os.path.join(self.build_dir,'docbook-xsl','docbook-xsl-1.79.1')
     
     def command_base_before_build(self):
         # Fetch the rest of the Boost submodules in the appropriate
@@ -342,7 +340,9 @@ class script:
             'using auto-index : "%s" ;'%(os.path.join(self.build_dir,'dist','bin','auto_index')),
             'using docutils ;',
             'using doxygen ;',
-            'using boostbook : "%s" : "%s" ;'%(os.environ['DOCBOOK_XSL_DIR'],os.environ['DOCBOOK_DTD_DIR']))
+            'using boostbook : "%s" : "%s" ;'%(
+                os.path.join(self.build_dir,'docbook-xsl','docbook-xsl-1.79.1'),
+                os.path.join(self.build_dir,'docbook-xml')))
         
         # Pre-build Boost Geometry docs.
         os.chdir(os.path.join(self.root_dir,"libs","geometry","doc"))
