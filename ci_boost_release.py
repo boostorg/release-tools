@@ -156,6 +156,13 @@ class utils:
         f = codecs.open( filename, 'w', 'utf-8' )
         f.write( string.join( text, '\n' ) )
         f.close()
+    
+    @staticmethod
+    def mem_info():
+        if sys.platform == "darwin":
+            utils.call("top","-l","1","-s","0","-n","0")
+        else:
+            utils.call("free","-m","-l")
 
 class parallel_call(threading.Thread):
     
@@ -209,7 +216,7 @@ class script:
         #~ Defaults
         self.debug_level=0
         self.eol=os.getenv('RELEASE_BUILD', 'LF')
-        self.jobs=3
+        self.jobs=2
         self.branch = branch
         self.commit = commit
         ( _opt_, self.actions ) = opt.parse_args(None,self)
@@ -244,12 +251,13 @@ class script:
         self.bintray_key = os.getenv('BINTRAY_KEY')
         self.sf_releases_key = os.getenv('SF_RELEASES_KEY')
 
+        self.command_base_info()
         self.main()
 
     # Common test commands in the order they should be executed..
     
     def command_base_info(self):
-        pass
+        utils.check_call('xsltproc','--version')
     
     def command_base_install(self):
         utils.makedirs(self.build_dir)
@@ -357,7 +365,8 @@ class script:
             parallel=True)
         while doc_build.is_alive():
             time.sleep(3*60)
-            print("Building.")
+            print("--- Building ---")
+            utils.mem_info()
         doc_build.join()
 
         # Download the library list.
