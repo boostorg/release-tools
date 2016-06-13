@@ -413,6 +413,17 @@ class script:
                 'user = "%s:%s"'%('grafikrobot',self.bintray_key))
         else:
             return
+        # Create version ahead of uploading to avoid invalid version errors.
+        if self.bintray_key:
+            utils.make_file(
+                os.path.join(self.build_dir,'bintray_release.json'),
+                '{ "name" : "%s", "desc" : "" }'%(self.commit))
+            utils.check_call('curl',
+                '-K',curl_cfg,
+                '-T',os.path.join(self.build_dir,'bintray_release.json'),
+                'https://api.bintray.com/packages/boostorg/%s/snapshot/versions'%(
+                    # repo
+                    self.branch))
         uploads = []
         for filename in filenames:
             if self.sf_releases_key:
@@ -424,7 +435,7 @@ class script:
                     '-T',filename,
                     'https://sourceforge.net/projects/boost/files/snapshots/%s/%s/%s'%(
                         self.branch,self.commit,filename)))
-            else:
+            elif self.bintray_key:
                 # You'd think that we would need to specify api.bintray.com/content/boostorg/*/snapshot/
                 # as the root path to delete the existing archive. But Bintray has an API
                 # (where A == asymetric), and hence nothing is intuitive.
