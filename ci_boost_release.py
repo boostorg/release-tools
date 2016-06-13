@@ -434,6 +434,12 @@ class script:
                     'https://api.bintray.com/content/boostorg/%s/%s'%(
                         # repo, file
                         self.branch,filename))
+                utils.check_call('curl',
+                    '-K',curl_cfg,
+                    '-X','DELETE',
+                    'https://api.bintray.com/content/boostorg/%s/%s.asc'%(
+                        # repo, file
+                        self.branch,filename))
                 uploads.append(parallel_call('curl',
                     '-K',curl_cfg,
                     '-T',filename,
