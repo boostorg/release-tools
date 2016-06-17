@@ -189,14 +189,16 @@ class script(script_common):
         curl_cfg_data = []
         curl_cfg = os.path.join(self.build_dir,'curl.cfg')
         if self.sf_releases_key:
-            utils.make_file(curl_cfg,
-                'data = "api_key=%s"'%(self.sf_releases_key))
+            curl_cfg_data += [
+                'data = "api_key=%s"'%(self.sf_releases_key),
+                ]
         elif self.bintray_key:
-            utils.make_file(curl_cfg,
-                'user = "%s:%s"'%('grafikrobot',self.bintray_key))
+            curl_cfg_data += [
+                'user = "%s:%s"'%('grafikrobot',self.bintray_key),
+                ]
         else:
             return
-        utils.make_file(curl_cfg,curl_cfg_data)
+        utils.make_file(curl_cfg,*curl_cfg_data)
         # Create version ahead of uploading to avoid invalid version errors.
         if self.bintray_key:
             utils.make_file(
