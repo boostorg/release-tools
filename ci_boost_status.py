@@ -23,7 +23,7 @@ class script(script_common):
         # like missing test files.
         os.chdir(self.root_dir)
         if sys.platform == "win32":
-            utils.check_call('cmd.exe', '/C', "./bootstrap.bat")
+            utils.check_call('cmd.exe', '/C', os.path.join(self.root_dir, "bootstrap.bat"))
         else:
             utils.check_call("./bootstrap.sh")
         os.environ['PATH'] = os.pathsep.join([self.root_dir,os.environ['PATH']])
