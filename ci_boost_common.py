@@ -457,7 +457,8 @@ class ci_appveyor(object):
         pass
     
     def command_before_build(self):
-        pass
+        os.chdir(self.root_dir)
+        utils.check_call("git","submodule","update","--quiet","--init","--recursive")
     
     def command_build_script(self):
         self.script.command_build()
