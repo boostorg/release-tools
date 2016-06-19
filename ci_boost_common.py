@@ -170,7 +170,7 @@ class utils:
     def mem_info():
         if sys.platform == "darwin":
             utils.call("top","-l","1","-s","0","-n","0")
-        else:
+        elif sys.platform.startswith("linux"):
             utils.call("free","-m","-l")
 
 class parallel_call(threading.Thread):
