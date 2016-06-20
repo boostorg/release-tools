@@ -186,18 +186,18 @@ class script(script_common):
         utils.check_call('ls','-la')
     
     def upload_archives(self, *filenames):
+        if not self.sf_releases_key and not self.bintray_key:
+            return
         curl_cfg_data = []
         curl_cfg = os.path.join(self.build_dir,'curl.cfg')
         if self.sf_releases_key:
             curl_cfg_data += [
                 'data = "api_key=%s"'%(self.sf_releases_key),
                 ]
-        elif self.bintray_key:
+        if self.bintray_key:
             curl_cfg_data += [
                 'user = "%s:%s"'%('grafikrobot',self.bintray_key),
                 ]
-        else:
-            return
         utils.make_file(curl_cfg,*curl_cfg_data)
         # Create version ahead of uploading to avoid invalid version errors.
         if self.bintray_key:
@@ -238,7 +238,7 @@ class script(script_common):
                     'sshpass','-e',
                     'rsync','-e',
                     filename,
-                    'grafik@frs.sourceforge.net:/home/frs/project/boost/snapshots/%s/'%(self.branch)))
+                    '${SSHUSER}@frs.sourceforge.net:/home/frs/project/boost/snapshots/%s/'%(self.branch)))
             if self.bintray_key:
                 # You'd think that we would need to specify api.bintray.com/content/boostorg/*/snapshot/
                 # as the root path to delete the existing archive. But Bintray has an API
