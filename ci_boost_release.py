@@ -237,6 +237,7 @@ class script(script_common):
                 uploads.append(parallel_call(
                     'sshpass','-e',
                     'rsync','-e','ssh',
+                    '-v','-v','-v','-v',
                     filename,
                     '${SSHUSER}@frs.sourceforge.net:/home/frs/project/boost/snapshots/%s/'%(self.branch)))
             if self.bintray_key:
