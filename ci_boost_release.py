@@ -237,9 +237,8 @@ class script(script_common):
                 uploads.append(parallel_call(
                     'sshpass','-e',
                     'rsync','-e','ssh',
-                    # '-v','-v','-v','-v',
                     filename,
-                    '%s@frs.sourceforge.net:/home/frs/project/boost/snapshots/%s/'%(
+                    '%s@frs.sourceforge.net:/home/frs/project/boost/boost/snapshots/%s/'%(
                         os.environ['SSHUSER'], self.branch)))
             if self.bintray_key:
                 # You'd think that we would need to specify api.bintray.com/content/boostorg/*/snapshot/
