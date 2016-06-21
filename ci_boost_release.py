@@ -237,9 +237,10 @@ class script(script_common):
                 uploads.append(parallel_call(
                     'sshpass','-e',
                     'rsync','-e','ssh',
-                    '-v','-v','-v','-v',
+                    # '-v','-v','-v','-v',
                     filename,
-                    '${SSHUSER}@frs.sourceforge.net:/home/frs/project/boost/snapshots/%s/'%(self.branch)))
+                    '%s@frs.sourceforge.net:/home/frs/project/boost/snapshots/%s/'%(
+                        os.environ['SSHUSER'], self.branch)))
             if self.bintray_key:
                 # You'd think that we would need to specify api.bintray.com/content/boostorg/*/snapshot/
                 # as the root path to delete the existing archive. But Bintray has an API
