@@ -56,7 +56,7 @@ class script(script_common):
     def command_install_docutils(self):
         os.chdir(self.build_dir)
         # Need docutils for building some docs.
-        utils.check_call("sudo","pip","install","docutils")
+        utils.check_call("pip","install","--user","docutils")
         os.chdir(self.root_dir)
     
     def command_install_docbook(self):
