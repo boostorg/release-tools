@@ -439,14 +439,11 @@ class ci_circleci(object):
         kargs['commit'] = os.getenv("CIRCLE_SHA1")
         return kargs
     
-    def command_machine_pre(self):
+    def command_machine_post(self):
         # Apt update for the pckages installs we'll do later.
         utils.check_call('sudo','apt-get','-qq','update')
         # Need PyYAML to read Travis yaml in a later step.
         utils.check_call("pip","install","--user","PyYAML")
-    
-    def command_machine_post(self):
-        pass
     
     def command_checkout_post(self):
         os.chdir(self.script.root_dir)
