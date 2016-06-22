@@ -434,10 +434,60 @@ class ci_circleci(object):
         self.script = script
     
     def init(self, opt, kargs):
-        kargs['root_dir'] = os.getenv("TRAVIS_BUILD_DIR")
+        kargs['root_dir'] = os.path.join(os.getenv("HOME"),os.getenv("CIRCLE_PROJECT_REPONAME"))
         kargs['branch'] = os.getenv("CIRCLE_BRANCH")
         kargs['commit'] = os.getenv("CIRCLE_SHA1")
         return kargs
+    
+    def command_machine_pre(self):
+        # Apt update for the pckages installs we'll do later.
+        utils.check_call('sudo','apt-get','-qq','update')
+        # Need PyYAML to read Travis yaml in a later step.
+        utils.check_call("pip","install","--user","PyYAML")
+    
+    def command_machine_post(self):
+        pass
+    
+    def command_checkout_post(self):
+        os.chdir(self.script.root_dir)
+        utils.check_call("git","submodule","update","--quiet","--init","--recursive")
+    
+    def command_dependencies_pre(self):
+        # Read in .travis.yml for list of packages to install
+        # as CircleCI doesn't have a convenient apt install method.
+        import yaml
+        with open(os.path.join(self.script.root_dir,'.travis.yml')) as yml:
+            travis_yml = yaml.load(yml)
+            for package in travis_yml['addons']['apt']['packages']:
+                utils.check_call('sudo','apt-get','install','-y',package)
+    
+    def command_dependencies_override(self):
+        self.script.install()
+    
+    def command_dependencies_post(self):
+        pass
+    
+    def command_database_pre(self):
+        pass
+    
+    def command_database_override(self):
+        pass
+    
+    def command_database_post(self):
+        pass
+    
+    def command_test_pre(self):
+        self.script.before_build()
+    
+    def command_test_override(self):
+        # CircleCI runs all the test subsets. So in order to avoid
+        # running the after_success we do it here as the build step
+        # will halt accordingly.
+        self.script.build()
+        self.script.after_success()
+    
+    def command_test_post(self):
+        pass
 
 class ci_appveyor(object):
     
