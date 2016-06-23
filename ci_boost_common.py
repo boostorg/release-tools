@@ -455,8 +455,9 @@ class ci_circleci(object):
         import yaml
         with open(os.path.join(self.script.root_dir,'.travis.yml')) as yml:
             travis_yml = yaml.load(yml)
-            for package in travis_yml['addons']['apt']['packages']:
-                utils.check_call('sudo','apt-get','install','-y',package)
+            utils.check_call('sudo','apt-get','-yq',
+                '--no-install-suggests','--no-install-recommends','--force-yes','install',
+                *travis_yml['addons']['apt']['packages'])
     
     def command_dependencies_override(self):
         self.script.install()
