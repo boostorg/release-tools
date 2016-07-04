@@ -453,6 +453,7 @@ class ci_circleci(object):
         # Read in .travis.yml for list of packages to install
         # as CircleCI doesn't have a convenient apt install method.
         import yaml
+        utils.check_call('sudo','-E','apt-get','-yq','update')
         with open(os.path.join(self.script.root_dir,'.travis.yml')) as yml:
             travis_yml = yaml.load(yml)
             utils.check_call('sudo','apt-get','-yq',
