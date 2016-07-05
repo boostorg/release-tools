@@ -454,7 +454,7 @@ class ci_circleci(object):
         # as CircleCI doesn't have a convenient apt install method.
         import yaml
         utils.check_call('sudo','-E','apt-get','-yqq','update')
-        utils.check_call('sudo','apt-get','-yqq','remove','texlive-full')
+        utils.check_call('sudo','apt-get','-yqq','remove','texlive')
         with open(os.path.join(self.script.root_dir,'.travis.yml')) as yml:
             travis_yml = yaml.load(yml)
             utils.check_call('sudo','apt-get','-yqq',
