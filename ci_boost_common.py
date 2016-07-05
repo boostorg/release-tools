@@ -462,7 +462,7 @@ class ci_circleci(object):
                 *travis_yml['addons']['apt']['packages'])
     
     def command_dependencies_override(self):
-        self.script.install()
+        self.script.command_install()
     
     def command_dependencies_post(self):
         pass
@@ -477,14 +477,14 @@ class ci_circleci(object):
         pass
     
     def command_test_pre(self):
-        self.script.before_build()
+        self.script.command_before_build()
     
     def command_test_override(self):
         # CircleCI runs all the test subsets. So in order to avoid
         # running the after_success we do it here as the build step
         # will halt accordingly.
-        self.script.build()
-        self.script.after_success()
+        self.script.command_build()
+        self.script.command_after_success()
     
     def command_test_post(self):
         pass
