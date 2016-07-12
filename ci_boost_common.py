@@ -434,12 +434,15 @@ class ci_circleci(object):
         self.script = script
     
     def init(self, opt, kargs):
-        kargs['root_dir'] = os.path.join(os.getenv("HOME"),os.getenv("CIRCLE_PROJECT_REPONAME"))
+        kargs['root_dir'] = os.path.join(os.getenv("HOME"),os.getenv("CIRCLE_PROJECT_REPONAME")+"."+os.getenv("CIRCLE_NODE_INDEX"))
         kargs['branch'] = os.getenv("CIRCLE_BRANCH")
         kargs['commit'] = os.getenv("CIRCLE_SHA1")
         return kargs
     
     def command_machine_post(self):
+        # We do parallelism in CircleCI by duplicating the root tree and
+        # having each node work individually on a clone.
+        utils.check_call('cp','-fa',os.path.join(os.getenv("HOME"),os.getenv("CIRCLE_PROJECT_REPONAME")),self.script.root_dir)
         # Apt update for the pckages installs we'll do later.
         utils.check_call('sudo','apt-get','-qq','update')
         # Need PyYAML to read Travis yaml in a later step.
