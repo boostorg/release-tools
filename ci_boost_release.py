@@ -50,7 +50,7 @@ class script(script_common):
         os.chdir(self.build_dir)
         # We use RapidXML for some doc building tools.
         if not os.path.exists(os.path.join(self.build_dir,'rapidxml.zip')):
-            utils.check_call("wget","-O","rapidxml.zip","http://sourceforge.net/projects/rapidxml/files/latest/download")
+            utils.check_call("wget","-O","rapidxml.zip","https://sourceforge.net/projects/rapidxml/files/rapidxml/rapidxml%201.13/rapidxml-1.13.zip/download")
             utils.check_call("unzip","-n","-d","rapidxml","rapidxml.zip")
     
     def command_install_docutils(self):
