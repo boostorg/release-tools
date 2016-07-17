@@ -107,20 +107,20 @@ class script(script_common):
         os.chdir(self.root_dir)
         self.b2("-q","-d0","headers")
         
-        # Build doxygen_xml2qbk for building Boost Geometry docs.
-        os.chdir(os.path.join(self.root_dir,"libs","geometry","doc","src","docutils","tools","doxygen_xml2qbk"))
-        self.b2('-q','-d0','--build-dir=%s'%(self.build_dir),'--distdir=%s'%(os.path.join(self.build_dir,'dist')))
+        # Build various tools:
+        # * doxygen_xml2qbk for building Boost Geometry docs.
+        # * Quickbook documentation tool.
+        # * auto-index documentation tool.
+        self.b2('-q','-d0','--build-dir=%s'%(self.build_dir),'--distdir=%s'%(os.path.join(self.build_dir,'dist')),
+            'libs/geometry/doc/src/docutils/tools/doxygen_xml2qbk',
+            'tools/quickbook',
+            'tools/auto_index/build')
+        
+        # Clean up build byproducts.
         os.chdir(os.path.join(self.root_dir,"libs","geometry"))
         utils.check_call("git","clean","-dfqx")
-        
-        # Build Quickbook documentation tool.
         os.chdir(os.path.join(self.root_dir,"tools","quickbook"))
-        self.b2('-q','-d0','--build-dir=%s'%(self.build_dir),'--distdir=%s'%(os.path.join(self.build_dir,'dist')))
         utils.check_call("git","clean","-dfqx")
-        
-        # Build auto-index documentation tool.
-        os.chdir(os.path.join(self.root_dir,"tools","auto_index","build"))
-        self.b2('-q','-d0','--build-dir=%s'%(self.build_dir),'--distdir=%s'%(os.path.join(self.build_dir,'dist')))
         os.chdir(os.path.join(self.root_dir,"tools","auto_index"))
         utils.check_call("git","clean","-dfqx")
         
