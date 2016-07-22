@@ -168,13 +168,15 @@ class script(script_common):
         # Create packages for LF style content.
         if self.eol == 'LF':
             os.chdir(os.path.dirname(self.root_dir))
+            os.environ['GZIP'] = "-9";
+            os.environ['BZIP2'] = "-9";
             packages.append(parallel_call('tar','-zcf','%s.tar.gz'%(self.boost_release_name),self.boost_release_name))
-            packages.append(parallel_call('tar','-cjf','%s.tar.bz2'%(self.boost_release_name),self.boost_release_name))
+            packages.append(parallel_call('tar','-jcf','%s.tar.bz2'%(self.boost_release_name),self.boost_release_name))
         
         # Create packages for CRLF style content.
         if self.eol == 'CRLF':
             os.chdir(os.path.dirname(self.root_dir))
-            packages.append(parallel_call('zip','-qr','%s.zip'%(self.boost_release_name),self.boost_release_name))
+            packages.append(parallel_call('zip','-qr','-9','%s.zip'%(self.boost_release_name),self.boost_release_name))
             with open('/dev/null') as dev_null:
                 utils.check_call('7z','a','-bd','-m0=lzma','-mx=9','-mfb=64','-md=32m','-ms=on',
                     '%s.7z'%(self.boost_release_name),self.boost_release_name, stdout=dev_null)
