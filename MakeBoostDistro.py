@@ -16,7 +16,12 @@ import stat
 
 IgnoreFiles = shutil.ignore_patterns(
 	'[.]*',
-	'[.]gitignore')
+	'[.]gitattributes',
+	'[.]gitignore',
+	'[.]gitmodules',
+	'[.]travis[.]yml',
+	'appveyor[.]yml',
+	'circle[.]yml')
 
 def IgnoreFile(src, name):
 	return len(IgnoreFiles(src, [name])) > 0
