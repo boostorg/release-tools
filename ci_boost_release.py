@@ -151,9 +151,10 @@ class script(script_common):
             utils.mem_info()
         doc_build.join()
 
-        # Download the library list.
+        # Download some generated files.
         os.chdir(self.root_dir)
         utils.check_call('wget', '-O', 'libs/libraries.htm', 'http://www.boost.org/doc/generate.php?page=libs/libraries.htm&version=%s'%(self.branch));
+        utils.check_call('wget', '-O', 'index.html', 'http://www.boost.org/doc/generate.php?page=index.html&version=%s'%(self.branch));
 
         # Make the real distribution tree from the base tree.
         os.chdir(os.path.join(self.build_dir))
