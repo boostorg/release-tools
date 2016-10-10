@@ -108,17 +108,13 @@ class script(script_common):
         self.b2("-q","-d0","headers")
         
         # Build various tools:
-        # * doxygen_xml2qbk for building Boost Geometry docs.
         # * Quickbook documentation tool.
         # * auto-index documentation tool.
         self.b2('-q','-d0','--build-dir=%s'%(self.build_dir),'--distdir=%s'%(os.path.join(self.build_dir,'dist')),
-            'libs/geometry/doc/src/docutils/tools/doxygen_xml2qbk',
             'tools/quickbook',
             'tools/auto_index/build')
         
         # Clean up build byproducts.
-        os.chdir(os.path.join(self.root_dir,"libs","geometry"))
-        utils.check_call("git","clean","-dfqx")
         os.chdir(os.path.join(self.root_dir,"tools","quickbook"))
         utils.check_call("git","clean","-dfqx")
         os.chdir(os.path.join(self.root_dir,"tools","auto_index"))
@@ -134,13 +130,9 @@ class script(script_common):
                 os.path.join(self.build_dir,'docbook-xsl','docbook-xsl-1.79.1'),
                 os.path.join(self.build_dir,'docbook-xml')))
         
-        # Pre-build Boost Geometry docs.
-        os.chdir(os.path.join(self.root_dir,"libs","geometry","doc"))
-        utils.check_call('python','make_qbk.py','--release-build')
-        
         # Build the full docs, and all the submodule docs.
         os.chdir(os.path.join(self.root_dir,"doc"))
-        doc_build = self.b2('-q','-d0',
+        doc_build = self.b2('-q','-d+4',
             '--build-dir=%s'%(self.build_dir),
             '--distdir=%s'%(os.path.join(self.build_dir,'dist')),
             '--release-build','--enable-index',
