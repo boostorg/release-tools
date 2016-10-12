@@ -135,7 +135,7 @@ class script(script_common):
         doc_build = self.b2('-q','-d+4',
             '--build-dir=%s'%(self.build_dir),
             '--distdir=%s'%(os.path.join(self.build_dir,'dist')),
-            '--release-build','--enable-index',
+            '--release-build',
             parallel=True)
         while doc_build.is_alive():
             time.sleep(3*60)
