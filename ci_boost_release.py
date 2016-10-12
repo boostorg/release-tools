@@ -136,6 +136,7 @@ class script(script_common):
             '--build-dir=%s'%(self.build_dir),
             '--distdir=%s'%(os.path.join(self.build_dir,'dist')),
             '--release-build',
+            'auto-index=off',
             parallel=True)
         while doc_build.is_alive():
             time.sleep(3*60)
