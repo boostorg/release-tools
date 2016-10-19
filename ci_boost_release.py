@@ -45,6 +45,7 @@ class script(script_common):
         self.command_install_rapidxml()
         self.command_install_docutils()
         self.command_install_docbook()
+        self.command_install_sphinx()
     
     def command_install_rapidxml(self):
         os.chdir(self.build_dir)
@@ -57,6 +58,12 @@ class script(script_common):
         os.chdir(self.build_dir)
         # Need docutils for building some docs.
         utils.check_call("pip","install","--user","docutils")
+        os.chdir(self.root_dir)
+    
+    def command_install_sphinx(self):
+        os.chdir(self.build_dir)
+        # Need Sphinx for building some docs (ie boost python).
+        utils.check_call("pip","install","--user","Sphinx")
         os.chdir(self.root_dir)
     
     def command_install_docbook(self):
