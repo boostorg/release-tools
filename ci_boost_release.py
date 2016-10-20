@@ -139,7 +139,7 @@ class script(script_common):
         
         # Build the full docs, and all the submodule docs.
         os.chdir(os.path.join(self.root_dir,"doc"))
-        doc_build = self.b2('-q','-d+4',
+        doc_build = self.b2('-q','-d0',
             '--build-dir=%s'%(self.build_dir),
             '--distdir=%s'%(os.path.join(self.build_dir,'dist')),
             '--release-build',
