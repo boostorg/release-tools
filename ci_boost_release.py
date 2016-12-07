@@ -9,6 +9,7 @@
 import os.path
 import time
 import shutil
+import site
 
 from ci_boost_common import main, utils, script_common, parallel_call
 
@@ -21,6 +22,7 @@ class script(script_common):
 
     def __init__(self, ci_klass, **kargs):
         script_common.__init__(self, ci_klass, **kargs)
+        os.environ["PATH"] += os.pathsep + os.path.join(site.getuserbase(), 'bin')
         
     def init(self, opt, kargs):
         kargs = super(script,self).init(opt,kargs)
@@ -63,10 +65,7 @@ class script(script_common):
     def command_install_sphinx(self):
         os.chdir(self.build_dir)
         # Need Sphinx for building some docs (ie boost python).
-        utils.check_call("pip","install","--user","Sphinx")
-        utils.check_call("pip","install","--user","requests")
-        import site
-        os.environ["PATH"] += os.pathsep + os.path.join(site.getuserbase(), 'bin')
+        utils.check_call("pip","install","--user","Sphinx==1.4")
         os.chdir(self.root_dir)
     
     def command_install_docbook(self):
