@@ -21,8 +21,9 @@ class script(script_common):
     '''
 
     def __init__(self, ci_klass, **kargs):
-        script_common.__init__(self, ci_klass, **kargs)
         os.environ["PATH"] += os.pathsep + os.path.join(site.getuserbase(), 'bin')
+        utils.log("PATH = %s"%(os.environ["PATH"]))
+        script_common.__init__(self, ci_klass, **kargs)
         
     def init(self, opt, kargs):
         kargs = super(script,self).init(opt,kargs)
@@ -157,6 +158,11 @@ class script(script_common):
         os.chdir(self.root_dir)
         utils.check_call('wget', '-O', 'libs/libraries.htm', 'http://www.boost.org/doc/generate.php?page=libs/libraries.htm&version=%s'%(self.branch));
         utils.check_call('wget', '-O', 'index.html', 'http://www.boost.org/doc/generate.php?page=index.html&version=%s'%(self.branch));
+        
+        # Clean up some extra build files that creep in. These are
+        # from stuff that doesn't obey the build-dir options.
+        utils.rmtree(os.path.join(self.root_dir,"libs","config","checks","architecture","bin"))
+        utils.check_call("git","submodule","--quiet","foreach","rm","-fr","doc/bin")
 
         # Make the real distribution tree from the base tree.
         os.chdir(os.path.join(self.build_dir))
