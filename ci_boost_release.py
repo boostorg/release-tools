@@ -19,6 +19,8 @@ class script(script_common):
     is not usable by itself, as it needs some setup for the particular CI
     environment before execution.
     '''
+    
+    archive_tag = "-snapshot"
 
     def __init__(self, ci_klass, **kargs):
         os.environ["PATH"] += os.pathsep + os.path.join(site.getuserbase(), 'bin')
@@ -179,16 +181,27 @@ class script(script_common):
             os.chdir(os.path.dirname(self.root_dir))
             os.environ['GZIP'] = "-9";
             os.environ['BZIP2'] = "-9";
-            packages.append(parallel_call('tar','-zcf','%s.tar.gz'%(self.boost_release_name),self.boost_release_name))
-            packages.append(parallel_call('tar','-jcf','%s.tar.bz2'%(self.boost_release_name),self.boost_release_name))
+            packages.append(parallel_call(
+                'tar','-zcf',
+                '%s%s.tar.gz'%(self.boost_release_name, self.archive_tag),
+                self.boost_release_name))
+            packages.append(parallel_call(
+                'tar','-jcf',
+                '%s%s.tar.bz2'%(self.boost_release_name, self.archive_tag),
+                self.boost_release_name))
         
         # Create packages for CRLF style content.
         if self.eol == 'CRLF':
             os.chdir(os.path.dirname(self.root_dir))
-            packages.append(parallel_call('zip','-qr','-9','%s.zip'%(self.boost_release_name),self.boost_release_name))
+            packages.append(parallel_call(
+                'zip','-qr','-9',
+                '%s%s.zip'%(self.boost_release_name, self.archive_tag),
+                self.boost_release_name))
             with open('/dev/null') as dev_null:
-                utils.check_call('7z','a','-bd','-m0=lzma','-mx=9','-mfb=64','-md=32m','-ms=on',
-                    '%s.7z'%(self.boost_release_name),self.boost_release_name, stdout=dev_null)
+                utils.check_call(
+                    '7z','a','-bd','-m0=lzma','-mx=9','-mfb=64','-md=32m','-ms=on',
+                    '%s%s.7z'%(self.boost_release_name, self.archive_tag),
+                    self.boost_release_name, stdout=dev_null)
         
         for package in packages:
             package.join()
@@ -280,12 +293,12 @@ class script(script_common):
         if self.eol == 'LF':
             os.chdir(os.path.dirname(self.root_dir))
             self.upload_archives(
-                '%s.tar.gz'%(self.boost_release_name),
-                '%s.tar.bz2'%(self.boost_release_name))
+                '%s%s.tar.gz'%(self.boost_release_name, self.archive_tag),
+                '%s%s.tar.bz2'%(self.boost_release_name, self.archive_tag))
         if self.eol == 'CRLF':
             os.chdir(os.path.dirname(self.root_dir))
             self.upload_archives(
-                '%s.zip'%(self.boost_release_name),
-                '%s.7z'%(self.boost_release_name))
+                '%s%s.zip'%(self.boost_release_name, self.archive_tag),
+                '%s%s.7z'%(self.boost_release_name, self.archive_tag))
 
 main(script)
