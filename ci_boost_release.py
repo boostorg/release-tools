@@ -10,6 +10,7 @@ import os.path
 import time
 import shutil
 import site
+import hashlib
 
 from ci_boost_common import main, utils, script_common, parallel_call
 
@@ -175,16 +176,21 @@ class script(script_common):
             self.root_dir,self.boost_release_name)
         
         packages = []
+        archive_files = []
         
         # Create packages for LF style content.
         if self.eol == 'LF':
             os.chdir(os.path.dirname(self.root_dir))
             os.environ['GZIP'] = "-9";
             os.environ['BZIP2'] = "-9";
+            archive_files.append(
+                '%s%s.tar.gz'%(self.boost_release_name, self.archive_tag));
             packages.append(parallel_call(
                 'tar','-zcf',
                 '%s%s.tar.gz'%(self.boost_release_name, self.archive_tag),
                 self.boost_release_name))
+            archive_files.append(
+                '%s%s.tar.bz2'%(self.boost_release_name, self.archive_tag));
             packages.append(parallel_call(
                 'tar','-jcf',
                 '%s%s.tar.bz2'%(self.boost_release_name, self.archive_tag),
@@ -193,10 +199,14 @@ class script(script_common):
         # Create packages for CRLF style content.
         if self.eol == 'CRLF':
             os.chdir(os.path.dirname(self.root_dir))
+            archive_files.append(
+                '%s%s.zip'%(self.boost_release_name, self.archive_tag));
             packages.append(parallel_call(
                 'zip','-qr','-9',
                 '%s%s.zip'%(self.boost_release_name, self.archive_tag),
                 self.boost_release_name))
+            archive_files.append(
+                '%s%s.7z'%(self.boost_release_name, self.archive_tag));
             with open('/dev/null') as dev_null:
                 utils.check_call(
                     '7z','a','-bd','-m0=lzma','-mx=9','-mfb=64','-md=32m','-ms=on',
@@ -205,6 +215,15 @@ class script(script_common):
         
         for package in packages:
             package.join()
+        
+        # Create archive info data files.
+        for archive_file in archive_files:
+            sha256_sum = hashlib.sha256(open(archive_file).read()).hexdigest()
+            utils.make_file("%s.json"%(archive_file),
+                "{",
+                '"sha256":"%s",'%(sha256_sum),
+                '"file":"%s",'%(archive_file),
+                "}")
         
         # List the results for debugging.
         utils.check_call('ls','-la')
@@ -294,11 +313,15 @@ class script(script_common):
             os.chdir(os.path.dirname(self.root_dir))
             self.upload_archives(
                 '%s%s.tar.gz'%(self.boost_release_name, self.archive_tag),
-                '%s%s.tar.bz2'%(self.boost_release_name, self.archive_tag))
+                '%s%s.tar.gz.json'%(self.boost_release_name, self.archive_tag),
+                '%s%s.tar.bz2'%(self.boost_release_name, self.archive_tag),
+                '%s%s.tar.bz2.json'%(self.boost_release_name, self.archive_tag))
         if self.eol == 'CRLF':
             os.chdir(os.path.dirname(self.root_dir))
             self.upload_archives(
                 '%s%s.zip'%(self.boost_release_name, self.archive_tag),
-                '%s%s.7z'%(self.boost_release_name, self.archive_tag))
+                '%s%s.zip.json'%(self.boost_release_name, self.archive_tag),
+                '%s%s.7z'%(self.boost_release_name, self.archive_tag),
+                '%s%s.7z.json'%(self.boost_release_name, self.archive_tag))
 
 main(script)
