@@ -52,6 +52,7 @@ class script(script_common):
         self.command_install_docutils()
         self.command_install_docbook()
         self.command_install_sphinx()
+        self.command_install_asciidoctor()
     
     def command_install_rapidxml(self):
         os.chdir(self.build_dir)
@@ -81,7 +82,13 @@ class script(script_common):
         if not os.path.exists(os.path.join(self.build_dir,'docbook-xsl.zip')):
             utils.check_call("wget","-O","docbook-xsl.zip","https://sourceforge.net/projects/docbook/files/docbook-xsl/1.79.1/docbook-xsl-1.79.1.zip/download")
             utils.check_call("unzip","-n","-d","docbook-xsl","docbook-xsl.zip")
-    
+
+    def command_install_asciidoctor(self):
+        os.chdir(self.build_dir)
+        utils.check_call("gem","install","asciidoctor")
+        utils.check_call("asciidoctor","--version")
+        os.chdir(self.root_dir)
+
     def command_before_build(self):
         super(script,self).command_before_build()
         # Fetch the rest of the Boost submodules in the appropriate
