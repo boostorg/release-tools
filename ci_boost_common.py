@@ -349,6 +349,10 @@ class ci_cli():
                 os.environ["PATH"] = doxygen_path+':'+os.environ['PATH']
         self.script = script
     
+    @property
+    def time_limit(self):
+        return 100*100
+    
     def init(self, opt, kargs):
         kargs['actions'] = [
             'clone',
@@ -386,6 +390,10 @@ class ci_travis(object):
     
     def __init__(self,script):
         self.script = script
+    
+    @property
+    def time_limit(self):
+        return 49
     
     def init(self, opt, kargs):
         kargs['root_dir'] = os.getenv("TRAVIS_BUILD_DIR")
@@ -432,6 +440,10 @@ class ci_circleci(object):
     
     def __init__(self,script):
         self.script = script
+    
+    @property
+    def time_limit(self):
+        return 120
     
     def init(self, opt, kargs):
         kargs['root_dir'] = os.path.join(os.getenv("HOME"),os.getenv("CIRCLE_PROJECT_REPONAME"))
@@ -493,6 +505,10 @@ class ci_appveyor(object):
     
     def __init__(self,script):
         self.script = script
+    
+    @property
+    def time_limit(self):
+        return 60
     
     def init(self, opt, kargs):
         kargs['root_dir'] = os.getenv("APPVEYOR_BUILD_FOLDER")

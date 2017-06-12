@@ -150,13 +150,17 @@ class script(script_common):
                 os.path.join(self.build_dir,'docbook-xsl','docbook-xsl-1.79.1'),
                 os.path.join(self.build_dir,'docbook-xml')))
         
+        # Determine if we generate index on the docs. Which we limit as they
+        # horrendous amounts of time to generate.
+        enable_auto_index = self.ci.time_limit > 60 and self.branch == "master"
+        
         # Build the full docs, and all the submodule docs.
         os.chdir(os.path.join(self.root_dir,"doc"))
         doc_build = self.b2('-q','-d0',
             '--build-dir=%s'%(self.build_dir),
             '--distdir=%s'%(os.path.join(self.build_dir,'dist')),
             '--release-build',
-            'auto-index=off',
+            'auto-index=off' if enable_auto_index else '',
             parallel=True)
         while doc_build.is_alive():
             time.sleep(3*60)
