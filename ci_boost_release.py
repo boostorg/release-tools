@@ -161,6 +161,7 @@ class script(script_common):
             '--distdir=%s'%(os.path.join(self.build_dir,'dist')),
             '--release-build',
             'auto-index=on' if enable_auto_index else 'auto-index=off',
+            '--enable-index' if enable_auto_index else '',
             parallel=True)
         while doc_build.is_alive():
             time.sleep(3*60)
