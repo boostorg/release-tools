@@ -253,7 +253,7 @@ class script(script_common):
                 ]
         if self.bintray_key:
             curl_cfg_data += [
-                'user = "%s:%s"'%('mjcaisse',self.bintray_key),
+                'user = "%s:%s"'%('boostsys',self.bintray_key),
                 ]
         utils.make_file(curl_cfg,*curl_cfg_data)
         # Create version ahead of uploading to avoid invalid version errors.
