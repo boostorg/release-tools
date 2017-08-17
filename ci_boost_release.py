@@ -236,7 +236,7 @@ class script(script_common):
                 '"sha256":"%s",'%(sha256_sum),
                 '"file":"%s",'%(archive_file),
                 '"branch":"%s",'%(self.branch),
-                '"commit":"%s",'%(self.commit),
+                '"commit":"%s"'%(self.commit),
                 "}")
         
         # List the results for debugging.
