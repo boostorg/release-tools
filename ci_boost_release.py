@@ -127,12 +127,16 @@ class script(script_common):
         os.chdir(self.root_dir)
         self.b2("-q","-d0","headers")
         
+        # Determine if we generate index on the docs. Which we limit as they
+        # horrendous amounts of time to generate.
+        enable_auto_index = self.ci.time_limit > 60 and self.branch == "master"
+
         # Build various tools:
         # * Quickbook documentation tool.
         # * auto-index documentation tool.
         self.b2('-q','-d0','--build-dir=%s'%(self.build_dir),'--distdir=%s'%(os.path.join(self.build_dir,'dist')),
             'tools/quickbook',
-            'tools/auto_index/build')
+            'tools/auto_index/build' if enable_auto_index else '')
         
         # Clean up build byproducts.
         os.chdir(os.path.join(self.root_dir,"tools","quickbook"))
@@ -149,10 +153,6 @@ class script(script_common):
             'using boostbook : "%s" : "%s" ;'%(
                 os.path.join(self.build_dir,'docbook-xsl','docbook-xsl-1.79.1'),
                 os.path.join(self.build_dir,'docbook-xml')))
-        
-        # Determine if we generate index on the docs. Which we limit as they
-        # horrendous amounts of time to generate.
-        enable_auto_index = self.ci.time_limit > 60 and self.branch == "master"
         
         # Build the full docs, and all the submodule docs.
         os.chdir(os.path.join(self.root_dir,"doc"))
