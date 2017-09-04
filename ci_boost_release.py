@@ -147,7 +147,7 @@ class script(script_common):
         # Set up build config.
         utils.make_file(os.path.join(self.build_dir,'site-config.jam'),
             'using quickbook : "%s" ;'%(os.path.join(self.build_dir,'dist','bin','quickbook')),
-            'using auto-index : "%s" ;'%(os.path.join(self.build_dir,'dist','bin','auto_index')),
+            'using auto-index : "%s" ;'%(os.path.join(self.build_dir,'dist','bin','auto_index')) if enable_auto_index else '',
             'using docutils ;',
             'using doxygen ;',
             'using boostbook : "%s" : "%s" ;'%(
