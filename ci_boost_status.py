@@ -16,19 +16,40 @@ class script(script_common):
     def __init__(self, ci_klass, **kargs):
         script_common.__init__(self, ci_klass, **kargs)
 
+    def init(self, opt, kargs):
+        kargs = super(script,self).init(opt,kargs)
+        opt.add_option( '--target',
+            help='test target (none, quick, minimal)')
+        self.target = os.getenv('TARGET', 'none')
+        return kargs
+
     def command_build(self):
         super(script,self).command_build()
-        # Simple integrated status tests check. Currently this only
-        # veryfies that we will not get build system errors from things
-        # like missing test files.
+
+        # Build b2
+
         os.chdir(self.root_dir)
         if sys.platform == "win32":
             utils.check_call('cmd.exe', '/C', os.path.join(self.root_dir, "bootstrap.bat"))
         else:
             utils.check_call("./bootstrap.sh")
         os.environ['PATH'] = os.pathsep.join([self.root_dir,os.environ['PATH']])
-        utils.check_call("b2","-n")
-        os.chdir(os.path.join(self.root_dir,"status"))
-        utils.check_call("b2","-n","-d0")
+
+        if self.target == 'none':
+
+            # Simple integrated status tests check. Only verifies that
+            # we will not get build system errors from things like missing
+            # test files.
+
+            utils.check_call("b2","-n")
+            os.chdir(os.path.join(self.root_dir,"status"))
+            utils.check_call("b2","-n","-d0")
+
+        else:
+
+            # Build specified target in status/Jamfile
+
+            os.chdir(os.path.join(self.root_dir,"status"))
+            utils.check_call( "b2", "-j%s"%(self.jobs), self.target )
 
 main(script)
