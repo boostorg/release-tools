@@ -18,9 +18,16 @@ class script(script_common):
 
     def init(self, opt, kargs):
         kargs = super(script,self).init(opt,kargs)
-        opt.add_option( '--target',
-            help='test target (none, quick, minimal)')
-        self.target = os.getenv('TARGET', 'none')
+
+        opt.add_option( '--target', help='test target (none, quick, minimal)' )
+        self.target = os.getenv( 'TARGET', 'none' )
+
+        opt.add_option( '--toolset' )
+        self.toolset = os.getenv( 'TOOLSET', None )
+
+        opt.add_option( '--cxxstd' )
+        self.cxxstd = os.getenv( 'CXXSTD', None )
+
         return kargs
 
     def command_build(self):
@@ -50,6 +57,15 @@ class script(script_common):
             # Build specified target in status/Jamfile
 
             os.chdir(os.path.join(self.root_dir,"status"))
-            utils.check_call( "b2", "-j%s"%(self.jobs), self.target )
+
+            cmd = [ 'b2', '-j%s' % (self.jobs), self.target ]
+
+            if self.toolset:
+                cmd.append( 'toolset=' + self.toolset )
+
+            if self.cxxstd:
+                cmd.append( 'cxxstd=' + self.cxxstd )
+
+            utils.check_call( *cmd )
 
 main(script)
