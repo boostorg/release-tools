@@ -58,7 +58,7 @@ class script(script_common):
                     os.environ['PATH'] = os.pathsep.join([self.root_dir,os.environ['PATH']])
 
                     # Headers
-                    utils.check_call( 'b2', '-q', 'headers' )
+                    utils.check_call( 'b2', '-d0', 'headers' )
 
                     # Test updated library
 
