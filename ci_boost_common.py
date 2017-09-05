@@ -209,10 +209,12 @@ class script_common(object):
             type='int', dest='jobs')
         opt.add_option('--branch')
         opt.add_option('--commit')
+        opt.add_option('--commit-message')
         kargs = self.init(opt,kargs)
         kargs = self.ci.init(opt, kargs)
         branch = kargs.get('branch',None)
         commit = kargs.get('commit',None)
+        commit_message = kargs.get('commit_message',None)
         actions = kargs.get('actions',None)
         root_dir = kargs.get('root_dir',None)
 
@@ -221,6 +223,7 @@ class script_common(object):
         self.jobs=2
         self.branch = branch
         self.commit = commit
+        self.commit_message = commit_message
         ( _opt_, self.actions ) = opt.parse_args(None,self)
         if not self.actions or self.actions == []:
             if actions:
@@ -399,6 +402,7 @@ class ci_travis(object):
         kargs['root_dir'] = os.getenv("TRAVIS_BUILD_DIR")
         kargs['branch'] = os.getenv("TRAVIS_BRANCH")
         kargs['commit'] = os.getenv("TRAVIS_COMMIT")
+        kargs['commit_message'] = os.getenv("TRAVIS_COMMIT_MESSAGE")
         return kargs
 
     # Travis-CI commands in the order they are executed. We need
@@ -514,6 +518,7 @@ class ci_appveyor(object):
         kargs['root_dir'] = os.getenv("APPVEYOR_BUILD_FOLDER")
         kargs['branch'] = os.getenv("APPVEYOR_REPO_BRANCH")
         kargs['commit'] = os.getenv("APPVEYOR_REPO_COMMIT")
+        kargs['commit_message'] = os.getenv("APPVEYOR_REPO_COMMIT_MESSAGE")
         return kargs
     
     # Appveyor commands in the order they are executed. We need
