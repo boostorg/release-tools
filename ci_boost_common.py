@@ -220,7 +220,12 @@ class script_common(object):
 
         #~ Defaults
         self.debug_level=0
-        self.jobs=2
+
+        try:
+            self.jobs = int(os.getenv('JOBS'))
+        except:
+            self.jobs = 2
+
         self.branch = branch
         self.commit = commit
         self.commit_message = commit_message
