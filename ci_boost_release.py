@@ -30,9 +30,14 @@ class script(script_common):
         
     def init(self, opt, kargs):
         kargs = super(script,self).init(opt,kargs)
+
         opt.add_option( '--eol',
             help='type of EOLs to check out files as for packaging (LF or CRLF)')
         self.eol=os.getenv('EOL', os.getenv('RELEASE_BUILD', 'LF'))
+
+        opt.add_option( '--mode', help="mode ('build' or 'check', default 'build')" )
+        self.mode = os.getenv( 'MODE', 'build' )
+
         return kargs
         
     def start(self):
@@ -129,7 +134,7 @@ class script(script_common):
         
         # Determine if we generate index on the docs. Which we limit as they
         # horrendous amounts of time to generate.
-        enable_auto_index = self.ci.time_limit > 60 and self.branch == "master"
+        enable_auto_index = self.ci.time_limit > 60 and self.branch == "master" and self.mode == "build"
 
         # Build various tools:
         # * Quickbook documentation tool.
@@ -156,6 +161,15 @@ class script(script_common):
         
         # Build the full docs, and all the submodule docs.
         os.chdir(os.path.join(self.root_dir,"doc"))
+
+        if self.mode == "check":
+            self.b2('-q','-d0','-n',
+                '--build-dir=%s'%(self.build_dir),
+                '--distdir=%s'%(os.path.join(self.build_dir,'dist')),
+                '--release-build',
+                'auto-index=off')
+            return
+
         doc_build = self.b2('-q','-d0',
             '--build-dir=%s'%(self.build_dir),
             '--distdir=%s'%(os.path.join(self.build_dir,'dist')),
@@ -322,7 +336,10 @@ class script(script_common):
         # We post archives to distribution services.
         if self.branch not in ['master', 'develop']:
             return
-        
+
+        if self.mode == "check":
+            return
+
         if self.eol == 'LF':
             os.chdir(os.path.dirname(self.root_dir))
             self.upload_archives(
