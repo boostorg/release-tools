@@ -43,6 +43,10 @@ class script(script_common):
 
                 target = 'libs/' + m.group(1) + '/test'
 
+                if not os.path.exists( target ):
+
+                    target = 'tools/' + m.group(1) + '/test'
+
                 if os.path.exists( target ):
 
                     # Build b2
@@ -58,6 +62,7 @@ class script(script_common):
                     os.environ['PATH'] = os.pathsep.join([self.root_dir,os.environ['PATH']])
 
                     # Headers
+
                     utils.check_call( 'b2', '-d0', 'headers' )
 
                     # Test updated library
