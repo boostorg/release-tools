@@ -224,7 +224,7 @@ class script_common(object):
         try:
             self.jobs = int(os.getenv('JOBS'))
         except:
-            self.jobs = 2
+            self.jobs = 3
 
         self.branch = branch
         self.commit = commit
