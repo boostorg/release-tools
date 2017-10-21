@@ -157,7 +157,8 @@ class script(script_common):
             'using doxygen ;',
             'using boostbook : "%s" : "%s" ;'%(
                 os.path.join(self.build_dir,'docbook-xsl','docbook-xsl-1.79.1'),
-                os.path.join(self.build_dir,'docbook-xml')))
+                os.path.join(self.build_dir,'docbook-xml')),
+            'using asciidoctor ;')
         
         # Build the full docs, and all the submodule docs.
         os.chdir(os.path.join(self.root_dir,"doc"))
