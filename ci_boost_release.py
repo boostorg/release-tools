@@ -77,7 +77,7 @@ class script(script_common):
         # Need Sphinx for building some docs (ie boost python).
         utils.check_call("pip","install","--user","Sphinx==1.5.6")
         utils.check_call("pip","install","--user","sphinx-boost>0.0.2")
-        utils.check_call("pip","install","--user","git+https://github.com/rtfd/recommonmark")
+        utils.check_call("pip","install","--user","git+https://github.com/pfultz2/recommonmark@develop")
         os.chdir(self.root_dir)
     
     def command_install_docbook(self):
