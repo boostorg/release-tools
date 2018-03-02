@@ -1,0 +1,42 @@
+## This is not a packaged script!
+## This is a collection of commands
+
+# This is how I build a boost release from git.
+#
+# Note that "MakeBoostDistro.py" misses one include file when it moves stuff around.
+# We move that file manually. It would be better to fix that bug, though.
+#
+# Scripts used: git-mirror-and-export.py, MakeBoostDistro.py, mergetree.py
+# Tools used: gnutar, 7za, zip, curl, find
+
+cd $BOOST/releases
+export BOOST_RELEASE=boost_1_58_0
+export RC=_rc3
+
+# Get the contents of the super-project
+rm -rf master-lf master-crlf
+git-mirror-and-export.py `pwd`
+
+# Fetch and expand the documentation
+rm boost-master-docs.7z
+curl -s -o boost-master-docs.7z http://boost.cowic.de/rc/boost-master-docs.7z
+rm -rf docs
+7za x -y boost-master-docs.7z -odocs
+
+# Make the Unix versions
+rm -rf $BOOST_RELEASE
+MakeBoostDistro.py master-lf $BOOST_RELEASE
+cp master-lf/libs/numeric/conversion/include/boost/cast.hpp $BOOST_RELEASE/boost/cast.hpp
+mergetree.py docs $BOOST_RELEASE
+find $BOOST_RELEASE -name \.\* -delete
+gnutar -zcf $BOOST_RELEASE$RC.tar.gz $BOOST_RELEASE
+gnutar -cjf $BOOST_RELEASE$RC.tar.bz2 $BOOST_RELEASE
+
+# Make the Windows versions
+rm -rf $BOOST_RELEASE
+MakeBoostDistro.py master-crlf $BOOST_RELEASE
+cp master-crlf/libs/numeric/conversion/include/boost/cast.hpp $BOOST_RELEASE/boost/cast.hpp
+mergetree.py docs $BOOST_RELEASE
+find $BOOST_RELEASE -name \.\* -delete
+zip -r $BOOST_RELEASE$RC.zip $BOOST_RELEASE
+7za a -r $BOOST_RELEASE$RC.7z $BOOST_RELEASE
