@@ -48,6 +48,7 @@ class script(script_common):
             # we will not get build system errors from things like missing
             # test files.
 
+            utils.check_call("b2","headers")
             utils.check_call("b2","-n")
             os.chdir(os.path.join(self.root_dir,"status"))
             utils.check_call("b2","-n","-d0")
