@@ -95,6 +95,9 @@ class script(script_common):
         os.chdir(self.build_dir)
         utils.check_call("gem","install","asciidoctor")
         utils.check_call("asciidoctor","--version")
+        utils.check_call("gem","install","pygments.rb")
+        utils.check_call("pip","install","--user","Pygments")
+        utils.check_call("pip","install","--user","https://github.com/bfgroup/jam_pygments/archive/master.zip")
         os.chdir(self.root_dir)
 
     def command_before_build(self):
