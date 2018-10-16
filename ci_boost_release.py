@@ -170,14 +170,14 @@ class script(script_common):
         os.chdir(os.path.join(self.root_dir,"doc"))
 
         if self.mode == "check":
-            self.b2('-q', '-n', # '-d0',
+            self.b2('-q','-d0','-n',
                 '--build-dir=%s'%(self.build_dir),
                 '--distdir=%s'%(os.path.join(self.build_dir,'dist')),
                 '--release-build',
                 'auto-index=off')
             return
 
-        doc_build = self.b2('-q', # '-d0',
+        doc_build = self.b2('-q','-d0',
             '--build-dir=%s'%(self.build_dir),
             '--distdir=%s'%(os.path.join(self.build_dir,'dist')),
             '--release-build',
