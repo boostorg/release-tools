@@ -40,9 +40,9 @@ class script(script_common):
         else:
             utils.check_call("./bootstrap.sh")
 
-        # Build Boost
+        # Build and install Boost
 
-        cmd = [ './b2', '-j%s' % (self.jobs) ]
+        cmd = [ './b2', '-j%s' % (self.jobs), '--prefix=' + os.path.expanduser( '~/.local' ), 'install' ]
 
         if self.toolset:
             cmd.append( 'toolset=' + self.toolset )
