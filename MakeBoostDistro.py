@@ -174,7 +174,7 @@ for f in os.listdir(SourceLibs):
 			BoostSubProjects.add(f)
 		elif os.path.isdir(os.path.join(SourceLibs,f,"include")):
 			BoostSubProjects.add(f)
-		elif os.path.isfile(os.path.join(SourceLibs,f,"sublibs")):
+		if os.path.isfile(os.path.join(SourceLibs,f,"sublibs")):
 			for s in os.listdir(os.path.join(SourceLibs,f)):
 				if os.path.isdir(os.path.join(SourceLibs,f,s)):
 					if os.path.isfile(os.path.join(SourceLibs,f,s,"meta","libraries.json")):
