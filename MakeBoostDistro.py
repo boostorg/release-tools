@@ -103,11 +103,12 @@ def CopySubProject(src, dst, headers, p):
 
 	# Now the includes
 	Source = os.path.join(src, "%s/include/boost" % p)
-	CopyInclude(Source, headers)
-# 	MergeTree(Source, Dest, symlinks=False, ignore=shutil.ignore_patterns('\.*', 'detail', 'pending'))
-	MergeIf(Source, headers, 'detail')
-	MergeIf(Source, headers, 'pending')
-	
+	if os.path.exists(Source):
+		CopyInclude(Source, headers)
+# 		MergeTree(Source, Dest, symlinks=False, ignore=shutil.ignore_patterns('\.*', 'detail', 'pending'))
+		MergeIf(Source, headers, 'detail')
+		MergeIf(Source, headers, 'pending')
+
 
 def CopyNestedProject(src, dst, headers, p):
 	#	First, everything except the "include" directory
