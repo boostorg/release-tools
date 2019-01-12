@@ -174,6 +174,8 @@ for f in os.listdir(SourceLibs):
 			BoostSubProjects.add(f)
 		elif os.path.isdir(os.path.join(SourceLibs,f,"include")):
 			BoostSubProjects.add(f)
+		elif f == 'headers':
+			BoostSubProjects.add(f)
 		elif os.path.isfile(os.path.join(SourceLibs,f,"sublibs")):
 			for s in os.listdir(os.path.join(SourceLibs,f)):
 				if os.path.isdir(os.path.join(SourceLibs,f,s)):
