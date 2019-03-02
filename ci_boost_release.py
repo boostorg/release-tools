@@ -182,12 +182,13 @@ class script(script_common):
             '--distdir=%s'%(os.path.join(self.build_dir,'dist')),
             '--release-build',
             'auto-index=on' if enable_auto_index else 'auto-index=off',
-            '--enable-index' if enable_auto_index else '')
-#        while doc_build.is_alive():
-#            time.sleep(3*60)
-#            print("--- Building ---")
-#            utils.mem_info()
-#        doc_build.join()
+            '--enable-index' if enable_auto_index else '',
+            parallel=True)
+        while doc_build.is_alive():
+            time.sleep(3*60)
+            print("--- Building ---")
+            utils.mem_info()
+        doc_build.join()
 
         # Download some generated files.
         os.chdir(self.root_dir)
