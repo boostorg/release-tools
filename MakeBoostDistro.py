@@ -103,11 +103,12 @@ def CopySubProject(src, dst, headers, p):
 
 	# Now the includes
 	Source = os.path.join(src, "%s/include/boost" % p)
-	CopyInclude(Source, headers)
-# 	MergeTree(Source, Dest, symlinks=False, ignore=shutil.ignore_patterns('\.*', 'detail', 'pending'))
-	MergeIf(Source, headers, 'detail')
-	MergeIf(Source, headers, 'pending')
-	
+	if os.path.exists(Source):
+		CopyInclude(Source, headers)
+# 		MergeTree(Source, Dest, symlinks=False, ignore=shutil.ignore_patterns('\.*', 'detail', 'pending'))
+		MergeIf(Source, headers, 'detail')
+		MergeIf(Source, headers, 'pending')
+
 
 def CopyNestedProject(src, dst, headers, p):
 	#	First, everything except the "include" directory
@@ -173,6 +174,8 @@ for f in os.listdir(SourceLibs):
 		if os.path.isfile(os.path.join(SourceLibs,f,"meta","libraries.json")):
 			BoostSubProjects.add(f)
 		elif os.path.isdir(os.path.join(SourceLibs,f,"include")):
+			BoostSubProjects.add(f)
+		elif f == 'headers':
 			BoostSubProjects.add(f)
 		elif os.path.isfile(os.path.join(SourceLibs,f,"sublibs")):
 			for s in os.listdir(os.path.join(SourceLibs,f)):
