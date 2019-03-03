@@ -455,7 +455,7 @@ class ci_circleci(object):
         return 120
     
     def init(self, opt, kargs):
-        kargs['root_dir'] = os.path.join(os.getenv("HOME"),os.getenv("CIRCLE_PROJECT_REPONAME"))
+        kargs['root_dir'] = os.getenv("CIRCLE_WORKING_DIRECTORY", os.path.join(os.getenv("HOME"),os.getenv("CIRCLE_PROJECT_REPONAME")))
         kargs['branch'] = os.getenv("CIRCLE_BRANCH")
         kargs['commit'] = os.getenv("CIRCLE_SHA1")
         return kargs
