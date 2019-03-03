@@ -159,7 +159,7 @@ class script(script_common):
         utils.make_file(os.path.join(self.build_dir,'site-config.jam'),
             'using quickbook : "%s" ;'%(os.path.join(self.build_dir,'dist','bin','quickbook')),
             'using auto-index : "%s" ;'%(os.path.join(self.build_dir,'dist','bin','auto_index')) if enable_auto_index else '',
-            'using docutils ;',
+            'using docutils : /usr/share/docutils ;',
             'using doxygen ;',
             'using boostbook : "%s" : "%s" ;'%(
                 os.path.join(self.build_dir,'docbook-xsl','docbook-xsl-1.79.1'),
