@@ -453,13 +453,19 @@ class ci_circleci(object):
     @property
     def time_limit(self):
         return 120
-    
+
     def init(self, opt, kargs):
-        kargs['root_dir'] = os.getenv("CIRCLE_WORKING_DIRECTORY", os.path.join(os.getenv("HOME"),os.getenv("CIRCLE_PROJECT_REPONAME")))
+        root_dir = os.getenv("CIRCLE_WORKING_DIRECTORY")
+        if root_dir:
+          root_dir = os.path.expanduser(root_dir)
+        else:
+          root_dir = os.path.join(os.getenv("HOME"),os.getenv("CIRCLE_PROJECT_REPONAME"))
+
+        kargs['root_dir'] = root_dir
         kargs['branch'] = os.getenv("CIRCLE_BRANCH")
         kargs['commit'] = os.getenv("CIRCLE_SHA1")
         return kargs
-    
+
     def command_machine_post(self):
         # Apt update for the pckages installs we'll do later.
         utils.check_call('sudo','apt-get','-qq','update')
