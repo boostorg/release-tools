@@ -49,6 +49,7 @@ class script(script_common):
     
     def command_info(self):
         super(script,self).command_info()
+        utils.log( "ci_boost_release: eol='%s', mode='%s'" % (self.eol, self.mode) )
         utils.check_call('xsltproc','--version')
     
     def command_install(self):
@@ -265,6 +266,7 @@ class script(script_common):
     
     def upload_archives(self, *filenames):
         if not self.sf_releases_key and not self.bintray_key:
+            utils.log( "ci_boost_release: upload_archives: no sf_releases_key and no bintray_key" )
             return
         curl_cfg_data = []
         curl_cfg = os.path.join(self.build_dir,'curl.cfg')
