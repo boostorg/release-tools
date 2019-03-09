@@ -29,7 +29,7 @@ class script(script_common):
         self.cxxstd = os.getenv( 'CXXSTD', None )
 
         opt.add_option( '--release' )
-        self.cxxstd = os.getenv( 'RELEASE', None )
+        self.release = os.getenv( 'RELEASE', None )
 
         return kargs
 
