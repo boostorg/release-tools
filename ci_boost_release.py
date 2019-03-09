@@ -310,28 +310,34 @@ class script(script_common):
                     'https://api.bintray.com/content/boostorg/%s/%s.asc'%(
                         # repo, file
                         self.branch,filename))
-        # The uploads to the release services happen in parallel to minimize clock time.
-        uploads = []
+
+        # # The uploads to the release services happen in parallel to minimize clock time.
+        # uploads = []
+
         for filename in filenames:
             if self.sf_releases_key:
-                uploads.append(parallel_call(
+                # uploads.append(parallel_call(
+                utils.check_call('curl',
                     'sshpass','-e',
                     'rsync','-e','ssh',
                     filename,
                     '%s@frs.sourceforge.net:/home/frs/project/boost/boost/snapshots/%s/'%(
-                        os.environ['SSHUSER'], self.branch)))
+                        os.environ['SSHUSER'], self.branch))
             if self.bintray_key:
                 # You'd think that we would need to specify api.bintray.com/content/boostorg/*/snapshot/
                 # as the root path to delete the existing archive. But Bintray has an API
                 # (where A == asymetric), and hence nothing is intuitive.
-                uploads.append(parallel_call('curl',
+                # uploads.append(parallel_call('curl',
+                utils.check_call('curl',
                     '-K',curl_cfg,
                     '-T',filename,
                     'https://api.bintray.com/content/boostorg/%s/snapshot/%s/%s?publish=1&override=1'%(
                         # repo, version, file
-                        self.branch,self.commit,filename)))
-        for upload in uploads:
-            upload.join()
+                        self.branch,self.commit,filename))
+
+        # for upload in uploads:
+        #     upload.join()
+
         # Configuration after uploads, like setting uploaded file properties.
         for filename in filenames:
             if self.sf_releases_key:
