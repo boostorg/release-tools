@@ -165,7 +165,8 @@ class script(script_common):
             'using boostbook : "%s" : "%s" ;'%(
                 os.path.join(self.build_dir,'docbook-xsl','docbook-xsl-1.79.1'),
                 os.path.join(self.build_dir,'docbook-xml')),
-            'using asciidoctor ;')
+            'using asciidoctor ;',
+            'using saxonhe ;')
         
         # Build the full docs, and all the submodule docs.
         os.chdir(os.path.join(self.root_dir,"doc"))
