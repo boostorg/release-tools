@@ -26,10 +26,27 @@ class script(script_common):
         opt.add_option( '--cxxstd' )
         self.cxxstd = os.getenv( 'CXXSTD', None )
 
+        opt.add_option( '--release' )
+        self.release = os.getenv( 'RELEASE', None )
+
         return kargs
 
     def command_build(self):
         super(script,self).command_build()
+
+        # if --release, switch to release layout
+
+        if self.release:
+
+            os.chdir(self.build_dir)
+            utils.check_call('wget','https://raw.githubusercontent.com/boostorg/release-tools/develop/MakeBoostDistro.py')
+            utils.check_call('chmod','+x','MakeBoostDistro.py')
+
+            os.chdir(self.root_dir)
+            utils.check_call('python',os.path.join(self.build_dir,'MakeBoostDistro.py'),
+                self.root_dir, 'release')
+
+            self.root_dir = os.path.join( self.root_dir, 'release' )
 
         # Build b2
 
