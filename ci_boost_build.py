@@ -57,15 +57,22 @@ class script(script_common):
         else:
             utils.check_call("./bootstrap.sh")
 
-        # Build and install Boost
+        # Build (stage) Boost
 
-        cmd = [ './b2', '-j%s' % (self.jobs), '--prefix=' + os.path.expanduser( '~/.local' ), 'install' ]
+        cmd = [ './b2', '-j%s' % (self.jobs) ]
 
         if self.toolset:
             cmd.append( 'toolset=' + self.toolset )
 
         if self.cxxstd:
             cmd.append( 'cxxstd=' + self.cxxstd )
+
+        utils.check_call( *cmd )
+
+        # Install Boost
+
+        cmd.append( '--prefix=' + os.path.expanduser( '~/.local' ) )
+        cmd.append( 'install' )
 
         utils.check_call( *cmd )
 
