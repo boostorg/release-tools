@@ -19,7 +19,7 @@ git-mirror-and-export.py `pwd`
 
 # Fetch and expand the documentation
 rm boost-master-docs.7z
-curl -s -o boost-master-docs.7z http://boost.cowic.de/rc/boost-master-docs.7z
+curl -s -o boost-master-docs.7z http://results.boost.org/rc/boost-master-docs.7z
 rm -rf docs
 7za x -y boost-master-docs.7z -odocs
 

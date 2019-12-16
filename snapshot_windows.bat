@@ -58,7 +58,7 @@ echo put windows.7z >>windows.ftp
 echo bye >>windows.ftp
 
 echo Running ftp script 1 ...
-ftp -n -i -s:windows.ftp boost.cowic.de
+ftp -n -i -s:windows.ftp results.boost.org
 
 echo Creating ftp script 2 ...
 copy user.txt windows.ftp
@@ -70,6 +70,6 @@ echo dir >>windows.ftp
 echo bye >>windows.ftp
 
 echo Running ftp script 2 ...
-ftp -n -i -s:windows.ftp boost.cowic.de
+ftp -n -i -s:windows.ftp results.boost.org
 
 echo Windows snapshot complete!

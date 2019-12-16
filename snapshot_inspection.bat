@@ -23,6 +23,6 @@ echo dir >>inspect.ftp
 echo bye >>inspect.ftp
 
 echo Run ftp script...
-ftp -n -i -s:inspect.ftp boost.cowic.de
+ftp -n -i -s:inspect.ftp results.boost.org
 
 echo Inspect script complete

@@ -20,8 +20,8 @@ def cmnd(x):  # execute a command
 argpsr = argparse.ArgumentParser(
   description='Inspect Boost source tree and upload results to ftp site',
   epilog='Example: python inspect.py --user foo --pass bar --file inspect-trunk.html')
-argpsr.add_argument('--host', help='URL of ftp site. Default: boost.cowic.de',
-                    default='boost.cowic.de')
+argpsr.add_argument('--host', help='URL of ftp site. Default: results.boost.org',
+                    default='results.boost.org')
 argpsr.add_argument('--user', help='User name for ftp site', required=True)
 argpsr.add_argument('--password', help='Password for ftp site', required=True)
 argpsr.add_argument('--filename', help='Filename for ftp site.', required=True)

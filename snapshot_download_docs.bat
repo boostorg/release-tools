@@ -23,7 +23,7 @@ echo get boost-release-docs.7z >>download_docs.ftp
 echo bye >>download_docs.ftp
 
 echo Running ftp script ...
-ftp -d -n -i -s:download_docs.ftp boost.cowic.de
+ftp -d -n -i -s:download_docs.ftp results.boost.org
 
 echo Unpacking 7z file ...
 7z x -y -odocs_temp boost-release-docs.7z

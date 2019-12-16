@@ -204,7 +204,7 @@ parser.add_argument ('-svnURL', dest="svnURL",
 					default="https://svn.boost.org/svn/boost/branches/release",
 					help='subversion URL to fetch (optional; mostly for debugging)')
 parser.add_argument('-suffix', help='suffix to append to the snapshot name; i.e, rc1')
-parser.add_argument('--server', dest='server', default="boost.cowic.de", action="store",
+parser.add_argument('--server', dest='server', default="results.boost.org", action="store",
 					help='ftp server to download docs from and upload snapshots to')
 parser.add_argument('--user', dest='username', default="", action="store")
 parser.add_argument('--pass', dest='password', default="", action="store")
