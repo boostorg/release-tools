@@ -183,6 +183,7 @@ class script(script_common):
             '--build-dir=%s'%(self.build_dir),
             '--distdir=%s'%(os.path.join(self.build_dir,'dist')),
             '--release-build',
+            '--exclude-libraries=beast',
             'auto-index=on' if enable_auto_index else 'auto-index=off',
             '--enable-index' if enable_auto_index else '',
             parallel=True)
@@ -191,6 +192,14 @@ class script(script_common):
             print("--- Building ---")
             utils.mem_info()
         doc_build.join()
+
+        try:
+            self.b2('-q', # '-d0',
+            '--build-dir=%s'%(self.build_dir),
+            '--distdir=%s'%(os.path.join(self.build_dir,'dist')),
+            '../libs/beast/doc//boostrelease')
+        except:
+            pass
 
         # Download some generated files.
         os.chdir(self.root_dir)
