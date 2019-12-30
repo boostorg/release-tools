@@ -567,6 +567,7 @@ class ci_appveyor(object):
         pass
 
 def main(script_klass):
+    os.environ['GIT_SSH_COMMAND'] = 'ssh -o StrictHostKeyChecking=no'
     if os.getenv('TRAVIS', False):
         script_klass(ci_travis)
     elif os.getenv('CIRCLECI', False):
