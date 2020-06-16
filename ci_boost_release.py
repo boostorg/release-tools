@@ -70,7 +70,7 @@ class script(script_common):
     def command_install_docutils(self):
         os.chdir(self.build_dir)
         # Need docutils for building some docs.
-        utils.check_call("pip","install","--user","docutils")
+        utils.check_call("pip","install","--user","docutils==0.12")
         os.chdir(self.root_dir)
     
     def command_install_sphinx(self):
@@ -78,7 +78,7 @@ class script(script_common):
         # Need Sphinx for building some docs (ie boost python).
         utils.make_file(os.path.join(self.build_dir,'constraints.txt'), 'Sphinx==1.5.6')
         utils.check_call("pip","install","--user","Sphinx==1.5.6")
-        utils.check_call("pip","install","--user","sphinx-boost>0.0.2")
+        utils.check_call("pip","install","--user","sphinx-boost==0.0.3")
         utils.check_call("pip","install","--user","-c", os.path.join(self.build_dir,'constraints.txt'), "git+https://github.com/rtfd/recommonmark@50be4978d7d91d0b8a69643c63450c8cd92d1212")
         os.chdir(self.root_dir)
     
@@ -96,8 +96,8 @@ class script(script_common):
         os.chdir(self.build_dir)
         utils.check_call("gem","install","asciidoctor", "--version", "1.5.8")
         utils.check_call("asciidoctor","--version")
-        utils.check_call("gem","install","pygments.rb")
-        utils.check_call("pip","install","--user","Pygments")
+        utils.check_call("gem","install","pygments.rb", "--version", "1.2.1")
+        utils.check_call("pip","install","--user","Pygments==2.1")
         utils.check_call("pip","install","--user","https://github.com/bfgroup/jam_pygments/archive/master.zip")
         os.chdir(self.root_dir)
 
