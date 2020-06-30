@@ -30,6 +30,7 @@ RUN apt-get update && apt-get install -y \
         flex \
         texlive-latex-extra \
         default-jre-headless \
+        python3 \
     && git clone -b 'Release_1_8_15' --depth 1 https://github.com/doxygen/doxygen.git \
     && cd doxygen \
     && cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Release \
