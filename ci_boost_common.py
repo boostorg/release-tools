@@ -6,6 +6,8 @@
 # (See accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt)
 
+from __future__ import print_function
+
 import sys
 import inspect
 import optparse
@@ -17,6 +19,12 @@ import codecs
 import shutil
 import threading
 import distutils.dir_util
+
+# For urllib
+from future.standard_library import install_aliases
+install_aliases()
+
+from builtins import str
 
 class SystemCallError(Exception):
     def __init__(self, command, result):
@@ -36,7 +44,7 @@ class utils:
         result = subprocess.call(command, **kargs)
         t = time.time()-t
         if result != 0:
-            print "Failed: '%s' ERROR = %s"%("' '".join(command), result)
+            print("Failed: '%s' ERROR = %s"%("' '".join(command), result))
         utils.call_stats.append((t,os.getcwd(),command,result))
         utils.log( "%s> '%s' execution time %s seconds"%(os.getcwd(), "' '".join(command), t) )
         return result
@@ -53,7 +61,7 @@ class utils:
         cwd = os.getcwd()
         result = utils.call(*command, **kargs)
         if result != 0:
-            raise(SystemCallError([cwd].extend(command), result))
+            raise SystemCallError([cwd].extend(command), result)
     
     @staticmethod
     def makedirs( path ):
@@ -65,7 +73,7 @@ class utils:
         frames = inspect.stack()
         level = 0
         for i in frames[ 3: ]:
-            if i[0].f_locals.has_key( '__log__' ):
+            if '__log__' in i[0].f_locals:
                 level = level + i[0].f_locals[ '__log__' ]
         return level
     
@@ -82,6 +90,11 @@ class utils:
             #~ shutil.rmtree( unicode( path ) )
             if sys.platform == 'win32':
                 os.system( 'del /f /s /q "%s" >nul 2>&1' % path )
+                # Python 3 compatibility hack
+                try:
+                    unicode('')
+                except NameError:
+                    unicode = str
                 shutil.rmtree( unicode( path ) )
             else:
                 os.system( 'rm -f -r "%s"' % path )
@@ -91,7 +104,7 @@ class utils:
         for attempts in range( max_attempts, -1, -1 ):
             try:
                 return f()
-            except Exception, msg:
+            except Exception as msg:
                 utils.log( '%s failed with message "%s"' % ( f.__name__, msg ) )
                 if attempts == 0:
                     utils.log( 'Giving up.' )
@@ -102,7 +115,7 @@ class utils:
 
     @staticmethod
     def web_get( source_url, destination_file, proxy = None ):
-        import urllib
+        import urllib.request, urllib.parse, urllib.error
 
         proxies = None
         if proxy is not None:
@@ -111,7 +124,7 @@ class utils:
                 'http' : proxy
                 }
 
-        src = urllib.urlopen( source_url, proxies = proxies )
+        src = urllib.request.urlopen( source_url, proxies = proxies )
 
         f = open( destination_file, 'wb' )
         while True:
@@ -164,7 +177,7 @@ class utils:
     @staticmethod
     def make_file(filename, *text):
         f = codecs.open( filename, 'w', 'utf-8' )
-        f.write( string.join( text, '\n' ) )
+        f.write( '\n'.join(text) )
         f.close()
     
     @staticmethod
@@ -188,7 +201,7 @@ class parallel_call(threading.Thread):
     def join(self):
         super(parallel_call,self).join()
         if self.result != 0:
-            raise(SystemCallError(self.command, self.result))
+            raise SystemCallError(self.command, self.result)
 
 class script_common(object):
     '''

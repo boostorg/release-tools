@@ -38,14 +38,14 @@ def mergetree(src, dst, symlinks=False, ignore=None):
 
 	try:
 		os.makedirs(dst)
-	except OSError, exc:
-		# XXX - this is pretty ugly
-		if "file already exists" in exc[1]:	 # Windows
-			pass
-		elif "File exists" in exc[1]:		 # Linux
-			pass
-		else:
-			raise
+	except OSError as exc:
+            strexc=str(exc)
+            if "file already exists" in strexc:      # Windows
+                pass
+            elif "File exists" in strexc:            # Linux
+                pass
+            else:
+                raise
 
 	errors = []
 	for name in names:
@@ -62,21 +62,21 @@ def mergetree(src, dst, symlinks=False, ignore=None):
 			else:
 				copy2(srcname, dstname)
 			# XXX What about devices, sockets etc.?
-		except (IOError, os.error), why:
+		except (IOError, os.error) as why:
 			errors.append((srcname, dstname, str(why)))
 		# catch the Error from the recursive mergetree so that we can
 		# continue with other files
-		except Error, err:
+		except Error as err:
 			errors.extend(err.args[0])
 	try:
 		copystat(src, dst)
 	except WindowsError:
 		# can't copy file access times on Windows
 		pass
-	except OSError, why:
+	except OSError as why:
 		errors.extend((src, dst, str(why)))
 	if errors:
-		raise Error, errors
+		raise Error(errors)
 
 def svnExport(url, eol, revisionStr, dest):
 	command_arr = [ "svn", "export", "--non-interactive", "--native-eol", eol, "-r", revisionStr, url, dest ]
@@ -102,7 +102,7 @@ def hash_file(filename):
 	return hasher
 
 def print_hash(filename):
-	print "%s *%s" % (hash_file(filename).hexdigest(), filename)
+	print("%s *%s" % (hash_file(filename).hexdigest(), filename))
 
 def compress_7z (dest, source):
 	command_arr = [ k7zName, "a", "-r", dest + ".7z",  source ]
