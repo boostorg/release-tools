@@ -203,8 +203,8 @@ class script(script_common):
 
         # Download some generated files.
         os.chdir(self.root_dir)
-        utils.check_call('wget', '-O', 'libs/libraries.htm', 'http://www.boost.org/doc/generate.php?page=libs/libraries.htm&version=%s'%(self.branch));
-        utils.check_call('wget', '-O', 'index.html', 'http://www.boost.org/doc/generate.php?page=index.html&version=%s'%(self.branch));
+        utils.check_call('wget', '-O', 'libs/libraries.htm', 'http://www.boost.org/doc/generate.php?page=libs/libraries.htm&version=%s'%(self.boost_version));
+        utils.check_call('wget', '-O', 'index.html', 'http://www.boost.org/doc/generate.php?page=index.html&version=%s'%(self.boost_version));
         
         # Clean up some extra build files that creep in. These are
         # from stuff that doesn't obey the build-dir options.
