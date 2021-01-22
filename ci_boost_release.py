@@ -131,7 +131,7 @@ class script(script_common):
         
         # Bootstrap Boost Build engine.
         os.chdir(os.path.join(self.root_dir,"tools","build"))
-        cxx_flags = (os.environ['CXX'], os.environ['CXXFLAGS'])
+        cxx_flags = (os.getenv('CXX', ""), os.getenv('CXXFLAGS', ""))
         os.environ['CXX'] = ""
         os.environ['CXXFLAGS'] = ""
         utils.check_call("./bootstrap.sh")
