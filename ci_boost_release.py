@@ -131,8 +131,13 @@ class script(script_common):
         
         # Bootstrap Boost Build engine.
         os.chdir(os.path.join(self.root_dir,"tools","build"))
+        cxx_flags = (os.environ['CXX'], os.environ['CXXFLAGS'])
+        os.environ['CXX'] = ""
+        os.environ['CXXFLAGS'] = ""
         utils.check_call("./bootstrap.sh")
         shutil.copy2("b2", os.path.join(self.build_dir,"dist","bin","b2"))
+        os.environ['CXX'] = cxx_flags[0]
+        os.environ['CXXFLAGS'] = cxx_flags[1]
         utils.check_call("git","clean","-dfqx")
         
         # Generate include dir structure.
