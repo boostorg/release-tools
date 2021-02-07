@@ -258,7 +258,7 @@ class script(script_common):
                 '%s%s.7z'%(self.boost_release_name, self.archive_tag));
             with open('/dev/null') as dev_null:
                 utils.check_call(
-                    '7z','a','-bd','-m0=lzma','-mx=9','-mfb=64','-md=32m','-ms=on',
+                    '7z','a','-bd','-mx=7','-ms=on',
                     '%s%s.7z'%(self.boost_release_name, self.archive_tag),
                     self.boost_release_name, stdout=dev_null)
         
