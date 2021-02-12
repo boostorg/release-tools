@@ -31,6 +31,13 @@ RUN apt-get update \
         flex \
         texlive-latex-extra \
         default-jre-headless \
+        software-properties-common \
+        apt-transport-https \
+        ca-certificates \
+    && apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0 \
+    && apt-add-repository https://cli.github.com/packages \
+    && apt-get update \
+    && apt-get install -y gh \
     && git clone -b 'Release_1_8_15' --depth 1 https://github.com/doxygen/doxygen.git \
     && cd doxygen \
     && cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Release \
