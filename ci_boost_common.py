@@ -258,6 +258,7 @@ class script_common(object):
         self.bintray_key = os.getenv('BINTRAY_KEY')
         self.sf_releases_key = os.getenv('SF_RELEASES_KEY')
         self.gh_token = os.getenv('GH_TOKEN')
+        self.artifactory_pass = os.getenv('ARTIFACTORY_PASS')
 
         try:
             self.start()

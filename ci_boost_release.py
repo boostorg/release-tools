@@ -284,6 +284,9 @@ class script(script_common):
 
         self.bintray_user="boostsys"
         self.bintray_org="boostorg"
+        self.artifactory_user="boostsys"
+        self.artifactory_org="boostorg"
+        self.artifactory_repo="main"
 
 	# If GH_TOKEN is set, github releases will activate, similar to the logic for BINTRAY_KEY.
 	# The variable "github_releases_main_repo" determines if github releases will be hosted on the boost repository itself.
@@ -301,7 +304,7 @@ class script(script_common):
 
         github_release_name=self.branch + "-snapshot"
 
-        if not self.sf_releases_key and not self.bintray_key and not self.gh_token:
+        if not self.sf_releases_key and not self.bintray_key and not self.gh_token and not self.artifactory_pass:
             utils.log( "ci_boost_release: upload_archives: no sf_releases_key and no bintray_key" )
             return
         curl_cfg_data = []
@@ -315,6 +318,14 @@ class script(script_common):
                 'user = "%s:%s"'%(self.bintray_user,self.bintray_key),
                 ]
         utils.make_file(curl_cfg,*curl_cfg_data)
+
+        if self.artifactory_pass:
+            curl_cfg_rt = os.path.join(self.build_dir,'curl_rt.cfg')
+            curl_cfg_rt_data = [
+                'user = "%s:%s"'%(self.artifactory_user,self.artifactory_pass),
+                ]
+            utils.make_file(curl_cfg_rt,*curl_cfg_rt_data)
+
         # Create version ahead of uploading to avoid invalid version errors.
         if self.bintray_key:
             utils.make_file(
@@ -443,6 +454,12 @@ class script(script_common):
                     'https://api.bintray.com/content/' + self.bintray_org + '/%s/snapshot/%s/%s?publish=1&override=1'%(
                         # repo, version, file
                         self.branch,self.commit,filename))
+            if self.artifactory_pass:
+                utils.check_call('curl',
+                    '-K',curl_cfg_rt,
+                    '-T',filename,
+                    'https://' + self.artifactory_org + '.jfrog.io/artifactory/' + self.artifactory_repo + '/%s/%s'%(
+                        self.branch,filename))
             if self.gh_token:
                 os.chdir(github_releases_folder)
                 utils.check_call('gh',
