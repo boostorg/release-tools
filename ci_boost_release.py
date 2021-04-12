@@ -11,6 +11,7 @@ import time
 import shutil
 import site
 import hashlib
+import subprocess
 
 from ci_boost_common import main, utils, script_common, parallel_call
 
@@ -280,7 +281,30 @@ class script(script_common):
         utils.check_call('ls','-la')
     
     def upload_archives(self, *filenames):
-        if not self.sf_releases_key and not self.bintray_key:
+
+        self.bintray_user="boostsys"
+        self.bintray_org="boostorg"
+        self.artifactory_user="boostsys"
+        self.artifactory_org="boostorg"
+        self.artifactory_repo="main"
+
+	# If GH_TOKEN is set, github releases will activate, similar to the logic for BINTRAY_KEY.
+	# The variable "github_releases_main_repo" determines if github releases will be hosted on the boost repository itself.
+	# If set to False, the github releases will be directed to a separate repo.
+        github_releases_main_repo=True
+
+        # The next two variables are only used if github_releases_main_repo==False
+        github_releases_target_org="boostorg"
+        github_releases_target_repo="boost-releases"
+
+        if github_releases_main_repo:
+            github_releases_folder=self.root_dir
+        else:
+            github_releases_folder=os.path.join(os.path.dirname(self.root_dir),"ghreleases")
+
+        github_release_name=self.branch + "-snapshot"
+
+        if not self.sf_releases_key and not self.bintray_key and not self.gh_token and not self.artifactory_pass:
             utils.log( "ci_boost_release: upload_archives: no sf_releases_key and no bintray_key" )
             return
         curl_cfg_data = []
@@ -291,9 +315,17 @@ class script(script_common):
                 ]
         if self.bintray_key:
             curl_cfg_data += [
-                'user = "%s:%s"'%('boostsys',self.bintray_key),
+                'user = "%s:%s"'%(self.bintray_user,self.bintray_key),
                 ]
         utils.make_file(curl_cfg,*curl_cfg_data)
+
+        if self.artifactory_pass:
+            curl_cfg_rt = os.path.join(self.build_dir,'curl_rt.cfg')
+            curl_cfg_rt_data = [
+                'user = "%s:%s"'%(self.artifactory_user,self.artifactory_pass),
+                ]
+            utils.make_file(curl_cfg_rt,*curl_cfg_rt_data)
+
         # Create version ahead of uploading to avoid invalid version errors.
         if self.bintray_key:
             utils.make_file(
@@ -302,7 +334,7 @@ class script(script_common):
             utils.check_call('curl',
                 '-K',curl_cfg,
                 '-T',os.path.join(self.build_dir,'bintray_release.json'),
-                'https://api.bintray.com/packages/boostorg/%s/snapshot/versions'%(
+                'https://api.bintray.com/packages/' + self.bintray_org + '/%s/snapshot/versions'%(
                     # repo
                     self.branch))
         # Setup before we can upload to the release services.
@@ -316,18 +348,91 @@ class script(script_common):
                 utils.check_call('curl',
                     '-K',curl_cfg,
                     '-X','DELETE',
-                    'https://api.bintray.com/content/boostorg/%s/%s'%(
+                    'https://api.bintray.com/content/' + self.bintray_org + '/%s/%s'%(
                         # repo, file
                         self.branch,filename))
                 utils.check_call('curl',
                     '-K',curl_cfg,
                     '-X','DELETE',
-                    'https://api.bintray.com/content/boostorg/%s/%s.asc'%(
+                    'https://api.bintray.com/content/' + self.bintray_org + '/%s/%s.asc'%(
                         # repo, file
                         self.branch,filename))
 
         # # The uploads to the release services happen in parallel to minimize clock time.
         # uploads = []
+
+        # Prepare gh uploads
+        if self.gh_token:
+            os.chdir(os.path.dirname(self.root_dir))
+
+            # Check out github releases target repo, if necessary
+            if not github_releases_main_repo:
+                if os.path.isdir(github_releases_folder):
+                    os.chdir(github_releases_folder)
+                    utils.check_call('git',
+                        'pull',
+                        'https://github.com/%s/%s'%(github_releases_target_org,github_releases_target_repo))
+                    utils.check_call('git',
+                        'checkout',
+                        '%s'%(self.branch))
+                else:
+                    utils.check_call('git',
+                        'clone',
+                        'https://github.com/%s/%s'%(github_releases_target_org,github_releases_target_repo),
+                        '%s'%(github_releases_folder)
+                        )
+                    os.chdir(github_releases_folder)
+                    utils.check_call('git',
+                        'checkout',
+                        '%s'%(self.branch))
+
+            os.chdir(github_releases_folder)
+
+            # gh has a concept called "base" repo. Pointing it to "origin".
+            utils.check_call('git',
+                    'config',
+                    '--local',
+                    'remote.origin.gh-resolved',
+                    'base')
+
+            # allow credentials to be read from $GH_USER and $GH_TOKEN env variables
+            credentialhelperscript='!f() { sleep 1; echo "username=${GH_USER}"; echo "password=${GH_TOKEN}"; }; f'
+            utils.check_call('git',
+                    'config',
+                    'credential.helper',
+                    '%s'%(credentialhelperscript))
+
+            # Create a release, if one is not present
+            list_of_releases=subprocess.check_output(['gh',
+                'release',
+                'list'])
+
+            if github_release_name not in list_of_releases:
+                utils.check_call('gh',
+                    'release',
+                    'create',
+                    '%s'%(github_release_name),
+                    '-t',
+                    '%s snapshot'%(self.branch),
+                    '-n',
+                    'Latest snapshot of %s branch'%(self.branch))
+
+            # Update the tag
+            # When github_releases_main_repo is False, this may not be too important.
+            # If github_releases_main_repo is True, the git tag should match the release.
+            os.chdir(github_releases_folder)
+            utils.check_call('git',
+                    'tag',
+                    '-f',
+                    '%s'%(github_release_name))
+            utils.check_call('git',
+                    'push',
+                    '-f',
+                    'origin',
+                    '%s'%(github_release_name))
+
+            # Finished with "prepare gh uploads". Set directory back to reasonable value.
+            os.chdir(os.path.dirname(self.root_dir))
 
         for filename in filenames:
             if self.sf_releases_key:
@@ -346,9 +451,24 @@ class script(script_common):
                 utils.check_call('curl',
                     '-K',curl_cfg,
                     '-T',filename,
-                    'https://api.bintray.com/content/boostorg/%s/snapshot/%s/%s?publish=1&override=1'%(
+                    'https://api.bintray.com/content/' + self.bintray_org + '/%s/snapshot/%s/%s?publish=1&override=1'%(
                         # repo, version, file
                         self.branch,self.commit,filename))
+            if self.artifactory_pass:
+                utils.check_call('curl',
+                    '-K',curl_cfg_rt,
+                    '-T',filename,
+                    'https://' + self.artifactory_org + '.jfrog.io/artifactory/' + self.artifactory_repo + '/%s/%s'%(
+                        self.branch,filename))
+            if self.gh_token:
+                os.chdir(github_releases_folder)
+                utils.check_call('gh',
+                    'release',
+                    'upload',
+                    '%s'%(github_release_name),
+                    '%s'%(os.path.join(os.path.dirname(self.root_dir),filename)),
+                    '--clobber')
+                os.chdir(os.path.dirname(self.root_dir))
 
         # for upload in uploads:
         #     upload.join()
