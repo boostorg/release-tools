@@ -97,6 +97,7 @@ class script(script_common):
         os.chdir(self.build_dir)
         utils.check_call("gem","install","asciidoctor", "--version", "1.5.8")
         utils.check_call("asciidoctor","--version")
+        utils.check_call("gem","install","rouge")
         utils.check_call("gem","install","pygments.rb", "--version", "1.2.1")
         utils.check_call("pip","install","--user","Pygments==2.1")
         utils.check_call("pip","install","--user","https://github.com/bfgroup/jam_pygments/archive/master.zip")
