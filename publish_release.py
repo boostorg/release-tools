@@ -55,6 +55,8 @@ def genJSON(snapshotJSON, fileName, incomingSHA):
 	newJSON = {}
 	newJSON ['commit'] = snap['commit']
 	newJSON ['file']   = fileName
+	if 'created' in snap:
+		newJSON ['created'] = snap['created']
 	newJSON ['sha256'] = incomingSHA
 	if snap ['sha256'] != incomingSHA:
 		print ("ERROR: Checksum failure for '%s'" % fileName)
@@ -109,19 +111,13 @@ if len(args) != 1:
 	exit (1)
 	
 boostVersion = args[0]
+dottedVersion = boostVersion.replace('_', '.')
 sourceRepo = "main/master/"
-sourceURL = "https://boostorg.jfrog.io/artifactory/main/master/"
 if options.beta == None:
 	actualName = "boost_%s" % boostVersion
-	destRepo   = "main/release/%s/source/" % boostVersion
+	destRepo   = "main/release/%s/source/" % dottedVersion
 else:
-#	For some reason, the beta versions are uploaded at a slightly different url
-#		Instead of  .../beta/1_77_0.beta1/
-#		They are at .../beta/1.77.0.beta1/
-#	And some older ones are .../beta/1.70.0.beta.1/
-#	TODO: make the betas use the same underscores as the releases
 	actualName = "boost_%s_b%d" % (boostVersion, options.beta)
-	dottedVersion = boostVersion.replace('_', '.')
 	destRepo   = "main/beta/%s.beta%d/source/" % (dottedVersion, options.beta)
 
 if options.rc != None:
