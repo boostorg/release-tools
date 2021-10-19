@@ -64,8 +64,9 @@ RUN apt-get update \
     && unzip -n -d docbook-xml docbook-xml.zip \
     && wget -O docbook-xsl.zip https://sourceforge.net/projects/docbook/files/docbook-xsl/1.79.1/docbook-xsl-1.79.1.zip/download \
     && unzip -n -d docbook-xsl docbook-xsl.zip \
-    && gem install asciidoctor --version 1.5.8 \
+    && gem install asciidoctor --version 2.0.16 \
     && asciidoctor --version \
+    && gem install rouge --version 3.26.1 \
     && git clone -b python3 https://github.com/CPPAlliance/pygments.rb \
     && cd pygments.rb \
     && gem install multi_json --version 1.14.1 \
