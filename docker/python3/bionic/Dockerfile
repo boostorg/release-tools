@@ -34,10 +34,12 @@ RUN apt-get update \
         software-properties-common \
         apt-transport-https \
         ca-certificates \
-    && apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0 \
-    && apt-add-repository https://cli.github.com/packages \
-    && apt-get update \
-    && apt-get install -y gh \
+    && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg --output githubcli-archive-keyring.gpg \
+    && gpg --dearmor -o /usr/share/keyrings/githubcli-archive-keyring.gpg githubcli-archive-keyring.gpg \
+    && rm githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list \
+    && apt update \
+    && apt install -y gh \
     && git clone -b 'Release_1_8_15' --depth 1 https://github.com/doxygen/doxygen.git \
     && cd doxygen \
     && cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Release \
@@ -52,6 +54,8 @@ RUN apt-get update \
     && mkdir build && cd build \
     && wget -O rapidxml.zip http://sourceforge.net/projects/rapidxml/files/latest/download \
     && unzip -n -d rapidxml rapidxml.zip \
+    && pip3 install --user Jinja2==2.11.2 \
+    && pip3 install --user MarkupSafe==1.1.1 \
     && echo "Sphinx==1.5.6" > constraints.txt \
     && pip3 install --user Sphinx==1.5.6 \
     && pip3 install --user sphinx-boost==0.0.3 \

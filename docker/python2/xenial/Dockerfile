@@ -52,6 +52,8 @@ RUN apt-get update && apt-get install -y \
     && mkdir build && cd build \
     && wget -O rapidxml.zip http://sourceforge.net/projects/rapidxml/files/latest/download \
     && unzip -n -d rapidxml rapidxml.zip \
+    && pip install --user Jinja2==2.11.2 \
+    && pip install --user MarkupSafe==1.1.1 \
     && pip install --user docutils==0.12 \
     && echo "Sphinx==1.5.6" > constraints.txt \
     && pip install --user Sphinx==1.5.6 \
