@@ -16,6 +16,7 @@ import subprocess
 import codecs
 import shutil
 import threading
+import distutils.dir_util
 
 class SystemCallError(Exception):
     def __init__(self, command, result):
@@ -518,6 +519,89 @@ class ci_circleci(object):
     def command_test_post(self):
         pass
 
+class ci_drone(object):
+    '''
+    This variant builds releases in the context of the Drone CI service.
+    Initially based on ci_circle class.
+    '''
+
+    def __init__(self,script):
+        self.script = script
+
+    @property
+    def time_limit(self):
+        return 120
+
+    def init(self, opt, kargs):
+        root_dir = os.getenv("DRONE_WORKSPACE")
+        if root_dir:
+          root_dir = os.path.expanduser(root_dir)
+        else:
+          root_dir = "/drone/src"
+
+        # The generated docker images contain some preinstalled dependencies in /root/build
+        # However, Drone runs in /drone instead of /root.
+        # So, copy the files over.
+        buildfilessrc="/root/build"
+        buildfilesdst="/drone/build"
+        if os.path.isdir(buildfilessrc):
+            distutils.dir_util.copy_tree(buildfilessrc,buildfilesdst)
+
+        kargs['root_dir'] = root_dir
+        kargs['branch'] = os.getenv("DRONE_BRANCH")
+        kargs['commit'] = os.getenv("DRONE_COMMIT")
+        return kargs
+
+    def command_machine_post(self):
+        # Apt update for the pckages installs we'll do later.
+        utils.check_call('sudo','apt-get','-qq','update')
+        # Need PyYAML to read Travis yaml in a later step.
+        utils.check_call("pip","install","--user","PyYAML")
+
+    def command_checkout_post(self):
+        os.chdir(self.script.root_dir)
+        utils.check_call("git","submodule","update","--quiet","--init","--recursive")
+
+    def command_dependencies_pre(self):
+        # Read in .travis.yml for list of packages to install
+        # as CircleCI doesn't have a convenient apt install method.
+        import yaml
+        utils.check_call('sudo','-E','apt-get','-yqq','update')
+        utils.check_call('sudo','apt-get','-yqq','purge','texlive*')
+        with open(os.path.join(self.script.root_dir,'.travis.yml')) as yml:
+            travis_yml = yaml.load(yml)
+            utils.check_call('sudo','apt-get','-yqq',
+                '--no-install-suggests','--no-install-recommends','--force-yes','install',
+                *travis_yml['addons']['apt']['packages'])
+
+    def command_dependencies_override(self):
+        self.script.command_install()
+
+    def command_dependencies_post(self):
+        pass
+
+    def command_database_pre(self):
+        pass
+
+    def command_database_override(self):
+        pass
+
+    def command_database_post(self):
+        pass
+
+    def command_test_pre(self):
+        self.script.command_before_build()
+
+    def command_test_override(self):
+        # CircleCI runs all the test subsets. So in order to avoid
+        # running the after_success we do it here as the build step
+        # will halt accordingly.
+        self.script.command_build()
+        self.script.command_after_success()
+
+    def command_test_post(self):
+        pass
+
 class ci_appveyor(object):
     
     def __init__(self,script):
@@ -573,6 +657,8 @@ def main(script_klass):
         script_klass(ci_travis)
     elif os.getenv('CIRCLECI', False):
         script_klass(ci_circleci)
+    elif os.getenv('DRONE', False):
+        script_klass(ci_drone)
     elif os.getenv('APPVEYOR', False):
         script_klass(ci_appveyor)
     else:
