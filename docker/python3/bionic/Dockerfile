@@ -67,12 +67,7 @@ RUN apt-get update \
     && gem install asciidoctor --version 2.0.16 \
     && asciidoctor --version \
     && gem install rouge --version 3.26.1 \
-    && git clone -b python3 https://github.com/CPPAlliance/pygments.rb \
-    && cd pygments.rb \
-    && gem install multi_json --version 1.14.1 \
-    && ruby cache-lexers.rb \
-    && gem build pygments.rb.gemspec \
-    && gem install pygments.rb-1.2.2.gem \
+    && gem install pygments.rb --version 2.1.0 \
     && pip3 install --user Pygments==2.2.0 \
     && pip3 install --user https://github.com/bfgroup/jam_pygments/archive/master.zip \
     && pip3 install --user future==0.18.2 \
