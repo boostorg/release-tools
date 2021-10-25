@@ -10,9 +10,12 @@
 #
 #	Usage: %0 source dest
 
+from __future__ import print_function
+
 import os, sys
 import shutil
 import stat
+import six
 
 IgnoreFiles = shutil.ignore_patterns(
 	'[.]*',
@@ -51,7 +54,7 @@ def MergeTree(src, dst, symlinks = False):
 			MergeTree(s, d, symlinks)
 		else:
 			if os.path.exists(d):
-				print "## Overwriting file %s with %s" % (d, s)
+				print("## Overwriting file %s with %s" % (d, s))
 			shutil.copy2(s, d)
 
 
@@ -83,7 +86,7 @@ def CopyInclude(src, dst):
 			MergeTree(s, d, symlinks=False)
 		else:
 			if os.path.exists(d):
-				print "## Overwriting file %s with %s" % (d, s)
+				print("## Overwriting file %s with %s" % (d, s))
 			CopyFile(src, dst, item)
 	
 
@@ -138,15 +141,15 @@ BoostSpecialFolders = [ "doc", "more", "status", "tools" ]
 SourceRoot = sys.argv[1]
 DestRoot   = sys.argv[2]
 
-print "Source = %s" % SourceRoot
-print "Dest   = %s" % DestRoot
+print("Source = %s" % SourceRoot)
+print("Dest   = %s" % DestRoot)
 
 if not os.path.exists(SourceRoot):
-	print "## Error: %s does not exist" % SourceRoot
+	print("## Error: %s does not exist" % SourceRoot)
 	exit(1)
 
 if not os.path.exists(DestRoot):
-	print "Creating destination directory %s" % DestRoot
+	print("Creating destination directory %s" % DestRoot)
 	os.makedirs(DestRoot)
 
 DestHeaders = os.path.join(DestRoot, BoostHeaders)
@@ -187,7 +190,7 @@ for f in os.listdir(SourceLibs):
 						BoostSubProjects.add((f,s))
 
 for p in BoostSubProjects:
-	if isinstance(p, basestring):
+	if isinstance(p, six.string_types):
 		CopySubProject(SourceLibs, DestLibs, DestHeaders, p)
 	else:
 		NestedSource  = os.path.join(SourceRoot,"libs",p[0])

@@ -4,6 +4,8 @@
 # Distributed under the Boost Software License, Version 1.0.
 # See http://www.boost.org/LICENSE_1_0.txt
 
+from __future__ import print_function
+
 import os
 import os.path
 import subprocess
@@ -13,8 +15,8 @@ import argparse
 def cmnd(x):  # execute a command
   rc = subprocess.call(x)
   if rc != 0:
-    print 'aborting command:'
-    print x
+    print('aborting command:')
+    print(x)
     exit(rc)
     
 argpsr = argparse.ArgumentParser(
@@ -29,37 +31,37 @@ args = argpsr.parse_args()
 filepath = 'temp/' + args.filename  
 
 if not os.path.exists('.svn'):
-  print 'Error: must be run in the boost root directory'
+  print('Error: must be run in the boost root directory')
   exit(1)
-print 'Boost root directory detected'
+print('Boost root directory detected')
 
 if not os.path.exists('temp'):
-  print 'Create temp directory...'
+  print('Create temp directory...')
   os.mkdir('temp')
   open('temp/boost-no-inspect', 'w').close()
 
 # cleanup clears locks or other residual problems (learned this the hard way!)
-print 'Clean working copy ...'
+print('Clean working copy ...')
 cmnd(['svn', 'cleanup'])
 
-print 'Update working copy...'
+print('Update working copy...')
 cmnd(['svn', 'up', '--non-interactive', '--trust-server-cert'])
 
-print 'Build inspect program...'
+print('Build inspect program...')
 cmnd(['bjam', 'tools/inspect/build'])
 
-print 'Running inspect from ' + os.getcwd()
+print('Running inspect from ' + os.getcwd())
 subprocess.call('dist/bin/inspect', stdout=open(filepath, 'w'))
 
-print 'FTP: Sign on...'
+print('FTP: Sign on...')
 ftp = FTP(args.host, args.user, args.password)
-print 'FTP: List current contents...'
+print('FTP: List current contents...')
 ftp.retrlines('LIST')
-print 'FTP: Upload web page via ftp...'
+print('FTP: Upload web page via ftp...')
 ftp.storlines('STOR ' + args.filename, open(filepath)) 
-print 'FTP: List updated contents...'
+print('FTP: List updated contents...')
 ftp.retrlines('LIST')
 ftp.quit()
 
-print "Inspect and upload complete"
+print("Inspect and upload complete")
 

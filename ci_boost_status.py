@@ -11,6 +11,14 @@ import os.path
 
 from ci_boost_common import main, utils, script_common
 
+# Check python version
+if sys.version_info[0] == 2 :
+    pythonversion="2"
+    pythonbinary="python2"
+else:
+    pythonversion="3"
+    pythonbinary="python3"
+
 class script(script_common):
 
     def __init__(self, ci_klass, **kargs):
@@ -45,7 +53,7 @@ class script(script_common):
             utils.check_call('chmod','+x','MakeBoostDistro.py')
 
             os.chdir(self.root_dir)
-            utils.check_call('python',os.path.join(self.build_dir,'MakeBoostDistro.py'),
+            utils.check_call(pythonbinary,os.path.join(self.build_dir,'MakeBoostDistro.py'),
                 self.root_dir, 'release')
 
             self.root_dir = os.path.join( self.root_dir, 'release' )

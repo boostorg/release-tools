@@ -1,6 +1,8 @@
 #!/usr/bin/python
 #
 
+from __future__ import print_function
+
 import requests
 
 import json
@@ -11,12 +13,25 @@ import errno
 import subprocess
 import re
 import shutil
-from urlparse import urlparse, urljoin
+
+# For urllib
+from future.standard_library import install_aliases
+install_aliases()
+from urllib.parse import urlparse, urljoin
+
+# For iteritems
+from future.utils import iteritems
+
+# Check python version
+if sys.version_info[0] == 2 :
+    pythonversion="2"
+else:
+    pythonversion="3"
 
 # Update or create the github mirror.
 def mirror_boostorg(root_dir):
     mirror_dir = os.path.join(root_dir, 'mirror')
-    print "Updating mirror at %s" % mirror_dir
+    print("Updating mirror at %s" % mirror_dir)
     url = 'https://api.github.com/orgs/boostorg/repos'
 
     while (url) :
@@ -25,7 +40,7 @@ def mirror_boostorg(root_dir):
             raise Exception("Error getting: " + url)
 
         for repo in json.loads(r.text or r.content):
-            print "Downloading " + repo['name']
+            print("Downloading " + repo['name'])
             url = repo['clone_url']
             # Not using os.path.join because url path is absolute.
             path = mirror_dir + urlparse(url).path
@@ -51,8 +66,8 @@ def mirror_export(root_dir, dst_dir, branch = 'master', eol = 'lf'):
             [ module_settings[x]['path'] for x in module_settings ])
 
     # Export child submodules
-    for name, module in module_settings.iteritems():
-        print "Exporting submodule " + name
+    for name, module in iteritems(module_settings):
+        print("Exporting submodule " + name)
         if module['path'] not in hashes:
             raise Exception('No hash for module ' + name)
         export_single_repo(
@@ -74,6 +89,8 @@ def get_submodule_settings(dst_dir):
     for line in subprocess.Popen(
             [ 'git', 'config', '-f', dst_dir + "/.gitmodules", "-l" ],
             stdout=subprocess.PIPE).stdout:
+        if pythonversion=="3":
+            line=line.decode(encoding="utf-8")
         result = re.match('submodule\.([^.]*)\.([^.]*)=(.*)', line)
         if result.group(1) not in module_settings:
             module_settings[result.group(1)] = { 'name': result.group(1) }
@@ -86,6 +103,8 @@ def get_submodule_hashes(boost_module_dir, branch, paths):
     for line in subprocess.Popen(
             [ 'git', '--git-dir=' + boost_module_dir, 'ls-tree', branch ] + paths,
             stdout=subprocess.PIPE).stdout:
+        if pythonversion=="3":
+            line=line.decode(encoding="utf-8")
         result = re.match('160000 commit ([0-9a-zA-Z]+)\t(.*)', line)
         hashes[result.group(2)] = result.group(1)
     return hashes
@@ -106,7 +125,7 @@ def mkdir_p(path):
 
 def export_boost(root_dir, branch, eol):
     dir = os.path.join(root_dir, branch + '-' + eol)
-    print "Exporting to %s" % dir
+    print("Exporting to %s" % dir)
     if os.path.isdir(dir):
         shutil.rmtree(dir)
     mirror_export(root_dir, dir, branch, eol)
@@ -116,14 +135,14 @@ if len(sys.argv) > 1:
 else:
 	root=os.path.dirname(sys.argv[0])
 
-print "Update mirror"
-print
+print("Update mirror")
+print()
 mirror_boostorg(root)
 
-print "Export master-crlf"
-print
+print("Export master-crlf")
+print()
 export_boost(root, 'master', 'crlf')
 
-print "Export master-lf"
-print
+print("Export master-lf")
+print()
 export_boost(root, 'master', 'lf')
