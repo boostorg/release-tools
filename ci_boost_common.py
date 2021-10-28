@@ -61,8 +61,10 @@ class utils:
         cwd = os.getcwd()
         result = utils.call(*command, **kargs)
         if result != 0:
-            raise SystemCallError([cwd].extend(command), result)
-    
+            commandinfo=[cwd]
+            commandinfo.extend(command)
+            raise SystemCallError(commandinfo, result)
+
     @staticmethod
     def makedirs( path ):
         if not os.path.exists( path ):
