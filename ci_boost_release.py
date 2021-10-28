@@ -297,13 +297,11 @@ class script(script_common):
     
     def upload_archives(self, *filenames):
 
-        self.bintray_user="boostsys"
-        self.bintray_org="boostorg"
         self.artifactory_user="boostsys"
         self.artifactory_org="boostorg"
         self.artifactory_repo="main"
 
-	# If GH_TOKEN is set, github releases will activate, similar to the logic for BINTRAY_KEY.
+	# If GH_TOKEN is set, github releases will activate.
 	# The variable "github_releases_main_repo" determines if github releases will be hosted on the boost repository itself.
 	# If set to False, the github releases will be directed to a separate repo.
         github_releases_main_repo=True
@@ -319,18 +317,14 @@ class script(script_common):
 
         github_release_name=self.branch + "-snapshot"
 
-        if not self.sf_releases_key and not self.bintray_key and not self.gh_token and not self.artifactory_pass:
-            utils.log( "ci_boost_release: upload_archives: no sf_releases_key and no bintray_key" )
+        if not self.sf_releases_key and not self.gh_token and not self.artifactory_pass:
+            utils.log( "ci_boost_release: upload_archives: no tokens or keys provided" )
             return
         curl_cfg_data = []
         curl_cfg = os.path.join(self.build_dir,'curl.cfg')
         if self.sf_releases_key:
             curl_cfg_data += [
                 'data = "api_key=%s"'%(self.sf_releases_key),
-                ]
-        if self.bintray_key:
-            curl_cfg_data += [
-                'user = "%s:%s"'%(self.bintray_user,self.bintray_key),
                 ]
         utils.make_file(curl_cfg,*curl_cfg_data)
 
@@ -340,38 +334,6 @@ class script(script_common):
                 'user = "%s:%s"'%(self.artifactory_user,self.artifactory_pass),
                 ]
             utils.make_file(curl_cfg_rt,*curl_cfg_rt_data)
-
-        # Create version ahead of uploading to avoid invalid version errors.
-        if self.bintray_key:
-            utils.make_file(
-                os.path.join(self.build_dir,'bintray_release.json'),
-                '{ "name" : "%s", "desc" : "" }'%(self.commit))
-            utils.check_call('curl',
-                '-K',curl_cfg,
-                '-T',os.path.join(self.build_dir,'bintray_release.json'),
-                'https://api.bintray.com/packages/' + self.bintray_org + '/%s/snapshot/versions'%(
-                    # repo
-                    self.branch))
-        # Setup before we can upload to the release services.
-        for filename in filenames:
-            if self.sf_releases_key:
-                pass
-            if self.bintray_key:
-                # You'd think that we would need to specify api.bintray.com/content/boostorg/*/snapshot/
-                # as the root path to delete the existing archive. But Bintray has an API
-                # (where A == asymetric), and hence nothing is intuitive.
-                utils.check_call('curl',
-                    '-K',curl_cfg,
-                    '-X','DELETE',
-                    'https://api.bintray.com/content/' + self.bintray_org + '/%s/%s'%(
-                        # repo, file
-                        self.branch,filename))
-                utils.check_call('curl',
-                    '-K',curl_cfg,
-                    '-X','DELETE',
-                    'https://api.bintray.com/content/' + self.bintray_org + '/%s/%s.asc'%(
-                        # repo, file
-                        self.branch,filename))
 
         # # The uploads to the release services happen in parallel to minimize clock time.
         # uploads = []
@@ -459,17 +421,6 @@ class script(script_common):
                     filename,
                     '%s@frs.sourceforge.net:/home/frs/project/boost/boost/snapshots/%s/'%(
                         os.environ['SSHUSER'], self.branch))
-            if self.bintray_key:
-                # You'd think that we would need to specify api.bintray.com/content/boostorg/*/snapshot/
-                # as the root path to delete the existing archive. But Bintray has an API
-                # (where A == asymetric), and hence nothing is intuitive.
-                # uploads.append(parallel_call('curl',
-                utils.check_call('curl',
-                    '-K',curl_cfg,
-                    '-T',filename,
-                    'https://api.bintray.com/content/' + self.bintray_org + '/%s/snapshot/%s/%s?publish=1&override=1'%(
-                        # repo, version, file
-                        self.branch,self.commit,filename))
             if self.artifactory_pass:
                 utils.check_call('curl',
                     '-K',curl_cfg_rt,
@@ -492,8 +443,6 @@ class script(script_common):
         # Configuration after uploads, like setting uploaded file properties.
         for filename in filenames:
             if self.sf_releases_key:
-                pass
-            if self.bintray_key:
                 pass
 
     def command_after_success(self):
