@@ -4,7 +4,8 @@ LABEL maintainer="samuel.d.darwin@gmail.com"
 WORKDIR /root
 
 RUN apt-get update \
-    && DEBIAN_FRONTEND="noninteractive" apt-get -y install tzdata \
+    && DEBIAN_FRONTEND="noninteractive" apt-get install -y tzdata \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y locales \
     && apt-get install -y \
         p7zip-full  \
         curl \
@@ -34,6 +35,10 @@ RUN apt-get update \
         software-properties-common \
         apt-transport-https \
         ca-certificates \
+        vim \
+    && sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
+    && dpkg-reconfigure --frontend=noninteractive locales \
+    && update-locale LANG=en_US.UTF-8 \
     && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg --output githubcli-archive-keyring.gpg \
     && gpg --dearmor -o /usr/share/keyrings/githubcli-archive-keyring.gpg githubcli-archive-keyring.gpg \
     && rm githubcli-archive-keyring.gpg \
@@ -74,3 +79,6 @@ RUN apt-get update \
     && pip3 install --user six==1.11.0 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean -y
+ENV LC_ALL en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US.UTF-8
