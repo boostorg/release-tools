@@ -16,6 +16,7 @@ import os, sys
 import shutil
 import stat
 import six
+import datetime
 
 IgnoreFiles = shutil.ignore_patterns(
 	'[.]*',
@@ -147,6 +148,11 @@ print("Dest   = %s" % DestRoot)
 if not os.path.exists(SourceRoot):
 	print("## Error: %s does not exist" % SourceRoot)
 	exit(1)
+
+if os.path.exists(DestRoot):
+    print("The destination directory already exists. Renaming it, so that a new one can be generated.\n")
+    timestamp1 = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+    os.rename(DestRoot,DestRoot + "_bck_" + timestamp1)
 
 if not os.path.exists(DestRoot):
 	print("Creating destination directory %s" % DestRoot)

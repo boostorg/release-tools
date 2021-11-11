@@ -476,12 +476,20 @@ class script(script_common):
         # Create archive info data files.
         for archive_file in archive_files:
             sha256_sum = hashlib.sha256(open(archive_file,"rb").read()).hexdigest()
+            created_date = ""
+            try:
+                created_date = subprocess.check_output("set -e && set -o pipefail; TZ=UTC git -C " + self.root_dir + " show -s --date='format-local:%Y-%m-%dT%H:%M:%SZ' " + self.commit + " | grep Date: | tr -s ' ' | cut -d' ' -f 2 ", universal_newlines=True, shell=True, executable='/bin/bash');
+                created_date = created_date.strip()
+            except:
+                print("Could not find the commit in the git log.")
+
             utils.make_file("%s.json"%(archive_file),
                 "{",
                 '"sha256":"%s",'%(sha256_sum),
                 '"file":"%s",'%(archive_file),
                 '"branch":"%s",'%(self.branch),
-                '"commit":"%s"'%(self.commit),
+                '"commit":"%s",'%(self.commit),
+                '"created":"%s"'%(created_date),
                 "}")
         
         # List the results for debugging.
