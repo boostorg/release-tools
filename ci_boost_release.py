@@ -426,7 +426,7 @@ class script(script_common):
 
         # Make the real distribution tree from the base tree.
         os.chdir(os.path.join(self.build_dir))
-        utils.check_call('wget','https://raw.githubusercontent.com/sdarwin/release-tools/python3/MakeBoostDistro.py','-O','MakeBoostDistro.py')
+        utils.check_call('wget','https://raw.githubusercontent.com/boostorg/release-tools/python3/MakeBoostDistro.py','-O','MakeBoostDistro.py')
         utils.check_call('chmod','+x','MakeBoostDistro.py')
         os.chdir(os.path.dirname(self.root_dir))
         utils.check_call(pythonbinary,os.path.join(self.build_dir,'MakeBoostDistro.py'),
@@ -443,13 +443,13 @@ class script(script_common):
             archive_files.append(
                 '%s%s.tar.gz'%(self.boost_release_name, self.archive_tag));
             packages.append(parallel_call(
-                'tar','-zcf',
+                'tar','--exclude=ci_boost_common.py','--exclude=ci_boost_release.py','-zcf',
                 '%s%s.tar.gz'%(self.boost_release_name, self.archive_tag),
                 self.boost_release_name))
             archive_files.append(
                 '%s%s.tar.bz2'%(self.boost_release_name, self.archive_tag));
             packages.append(parallel_call(
-                'tar','-jcf',
+                'tar','--exclude=ci_boost_common.py','--exclude=ci_boost_release.py','-jcf',
                 '%s%s.tar.bz2'%(self.boost_release_name, self.archive_tag),
                 self.boost_release_name))
         
@@ -461,12 +461,12 @@ class script(script_common):
             packages.append(parallel_call(
                 'zip','-qr','-9',
                 '%s%s.zip'%(self.boost_release_name, self.archive_tag),
-                self.boost_release_name))
+                self.boost_release_name,'-x',self.boost_release_name + '/ci_boost_common.py', self.boost_release_name + '/ci_boost_release.py'))
             archive_files.append(
                 '%s%s.7z'%(self.boost_release_name, self.archive_tag));
             with open('/dev/null') as dev_null:
                 utils.check_call(
-                    '7z','a','-bd','-mx=7','-ms=on',
+                    '7z','a','-bd','-mx=7','-ms=on','-x!' + self.boost_release_name + '/ci_boost_common.py','-x!' + self.boost_release_name + '/ci_boost_release.py',
                     '%s%s.7z'%(self.boost_release_name, self.archive_tag),
                     self.boost_release_name, stdout=dev_null)
         
