@@ -135,15 +135,16 @@ def generatehtmlpages():
         # modify authors
         allmetadata[key]["authors_modified"]=names_to_string(allmetadata[key]["authors"])
 
-    # Specific fixes which should be propagated upstream
-    allmetadata['histogram']['name']="Histogram"            # sent pr # done.
-    allmetadata['parameter_python']['name']="Parameter Python Bindings"     # sent pr
-    allmetadata['process']['name']="Process"                # sent pr
-    allmetadata['stl_interfaces']['name']="Stl_interfaces"  # sent pr
-    allmetadata['utility/string_ref']['name']="String_ref"  # sent pr
-    allmetadata['compatibility']['category']=["Workarounds"] # sent pr
-    allmetadata['config']['category']=["Workarounds"]       # sent pr  # done
-    # allmetadata['leaf']['category']=["Miscellaneous"]       # sent pr  # done. obsolete.
+    # Specific fixes which should be propagated upstream:
+
+    # allmetadata['histogram']['name']="Histogram"            # sent pr. done.
+    # allmetadata['parameter_python']['name']="Parameter Python Bindings"  # sent pr. done.
+    allmetadata['process']['name']="Process"                  # sent pr
+    # allmetadata['stl_interfaces']['name']="Stl_interfaces"  # sent pr. done.
+    allmetadata['utility/string_ref']['name']="String_ref"    # sent pr
+    allmetadata['compatibility']['category']=["Workarounds"]  # sent pr
+    # allmetadata['config']['category']=["Workarounds"]       # sent pr. done.
+    # allmetadata['leaf']['category']=["Miscellaneous"]       # sent pr. done. obsolete.
     allmetadata['logic/tribool']['documentation_modified']="../doc/html/tribool.html"
 
     # determine libraries per category
