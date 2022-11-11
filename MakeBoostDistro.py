@@ -165,8 +165,7 @@ os.makedirs(DestLibs)
 
 ## Step 1
 for f in os.listdir(SourceRoot):
-	if f != 'CMakeLists.txt':
-		CopyFile(SourceRoot, DestRoot, f)
+	CopyFile(SourceRoot, DestRoot, f)
 
 ## Step 2
 for d in BoostSpecialFolders:
