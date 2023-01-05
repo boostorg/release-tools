@@ -165,7 +165,10 @@ if [ "$skippackagesoption" != "yes" ]; then
         sudo apt-get install -y bison docbook docbook-xml docbook-xsl docutils-doc docutils-common flex ghostscript graphviz libfl-dev libsaxonhe-java python3-docutils texlive texlive-latex-extra xsltproc
 	gem install public_suffix --version 4.0.7
         sudo gem install asciidoctor --version 2.0.16
-	sudo gem install asciidoctor-pdf
+        # the next two gems are for asciidoctor-pdf
+        sudo gem install public_suffix --version 4.0.7
+        sudo gem install css_parser --version 1.12.0
+	sudo gem install asciidoctor-pdf --version 2.3.4
         sudo pip3 install docutils
         # which library is using rapidxml
         # wget -O rapidxml.zip http://sourceforge.net/projects/rapidxml/files/latest/download
