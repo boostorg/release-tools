@@ -52,7 +52,7 @@ macosdocs.sh
 
 There various ways to run the script. One method is to run the script from the current location, and tell it where the docs are:
 ```
-.\windowsdocs.sh _path_to_boost_library_
+.\windowsdocs.ps1 _path_to_boost_library_
 ```
 Another method which might be easier is to copy the script into location in $PATH, so it can be run anywhere. Then, switch to the library's directory.
 ```
