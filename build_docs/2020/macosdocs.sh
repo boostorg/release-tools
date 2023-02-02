@@ -177,26 +177,23 @@ if [ "$skippackagesoption" != "yes" ]; then
 	brew install ghostscript
 	brew install texlive
         brew install graphviz
-        sudo gem install public_suffix --version 4.0.7               # 4.0.7 from 2022 still supports ruby 2.5. Continue to use until ~2024.
-        sudo gem install css_parser --version 1.12.0                 # 1.12.0 from 2022 still supports ruby 2.5. Continue to use until ~2024.
-        sudo gem install asciidoctor --version 2.0.17
-        sudo gem install asciidoctor-pdf --version 2.3.4
+	sudo gem install public_suffix --version 4.0.7
+        sudo gem install asciidoctor --version 2.0.16
+        sudo gem install asciidoctor-pdf
         pip3 install docutils --user
         # which library is using rapidxml
         # wget -O rapidxml.zip http://sourceforge.net/projects/rapidxml/files/latest/download
         # unzip -n -d rapidxml rapidxml.zip
         pip3 install --user https://github.com/bfgroup/jam_pygments/archive/master.zip
-        pip3 install --user Jinja2==3.1.2
-        pip3 install --user MarkupSafe==2.1.1
-        sudo gem install pygments.rb --version 2.3.0
-        pip3 install --user Pygments==2.13.0
-        sudo gem install rouge --version 4.0.0
-        pip3 install --user Sphinx==5.2.1
-        pip3 install --user git+https://github.com/pfultz2/sphinx-boost@8ad7d424c6b613864976546d801439c34a27e3f6
-        # from dockerfile:
-        pip3 install --user myst-parser==0.18.1
-        pip3 install --user future==0.18.2
-        pip3 install --user six==1.14.0
+        pip3 install --user Jinja2==2.11.2
+        pip3 install --user MarkupSafe==1.1.1
+        sudo gem install pygments.rb --version 2.1.0
+        pip3 install --user Pygments==2.2.0
+        sudo gem install rouge --version 3.26.1
+        echo "Sphinx==1.5.6" > constraints.txt
+        pip3 install --user Sphinx==1.5.6
+        pip3 install --user sphinx-boost==0.0.3
+        pip3 install --user -c constraints.txt git+https://github.com/rtfd/recommonmark@50be4978d7d91d0b8a69643c63450c8cd92d1212
 
         # Locking the version numbers in place offers a better guarantee of a known, good build.
         # At the same time, it creates a perpetual outstanding task, to upgrade the gem and pip versions
