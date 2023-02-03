@@ -7,36 +7,14 @@
 
 set -e
 
-scriptname="macosdocs.sh"
+scriptname="linuxdocs.sh"
 
 # set defaults:
 boostrelease=""
 
-# git and getopt are required. If they are not installed, moving that part of the installation process
-# to an earlier part of the script:
-if ! command -v brew &> /dev/null
-then
-    echo "Installing brew. Check the instructions that are shown."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-fi
-
-if ! command -v git &> /dev/null
-then
-    echo "Installing git"
-    brew install git
-fi
-
-# check apple silicon.
-if ! command -v /usr/local/opt/gnu-getopt/bin/getopt &> /dev/null
-then
-    echo "Installing gnu-getopt"
-    brew install gnu-getopt
-fi
-export PATH="/usr/local/opt/gnu-getopt/bin:$PATH"
-
 # READ IN COMMAND-LINE OPTIONS
 
-TEMP=`/usr/local/opt/gnu-getopt/bin/getopt -o t:,h::,q:: --long type:,help::,skip-boost::,skip-packages::,quick::,boostrelease:: -- "$@"`
+TEMP=`getopt -o t:,h::,q:: --long type:,help::,skip-boost::,skip-packages::,quick::,boostrelease:: -- "$@"`
 eval set -- "$TEMP"
 
 # extract options and their arguments into variables.
@@ -54,17 +32,17 @@ optional arguments:
                         Another option is \"cppal\" which installs the prerequisites used by boostorg/json and a few other similar libraries.
                         More \"types\" can be added in the future if your library needs a specific set of packages installed.
                         The type is usually auto-detected and doesn't need to be specified.
-  --skip-boost          Skip downloading boostorg/boost and building b2 if you are certain those steps have already been done.
-  --skip-packages       Skip installing all packages (pip, gem, apt, etc.) if you are certain that has already been done.
-  -q, --quick           Equivalent to setting both --skip-boost and --skip-packages. If not sure, then don't skip these steps.
-  --boostrelease        Add the target //boostrelease to the doc build. This target is used when building production releases.
+  --skip-boost   	Skip downloading boostorg/boost and building b2 if you are certain those steps have already been done.
+  --skip-packages	Skip installing all packages (pip, gem, apt, etc.) if you are certain that has already been done.
+  -q, --quick		Equivalent to setting both --skip-boost and --skip-packages. If not sure, then don't skip these steps.
+  --boostrelease	Add the target //boostrelease to the doc build. This target is used when building production releases.
 standard arguments:
-  path_to_library       Where the library is located. Defaults to current working directory.
+  path_to_library	Where the library is located. Defaults to current working directory.
 """
 
             echo ""
-            echo "$helpmessage" ;
-            echo ""
+	    echo "$helpmessage" ;
+	    echo ""
             exit 0
             ;;
         -t|--type)
@@ -72,21 +50,29 @@ standard arguments:
                 "") typeoption="" ; shift 2 ;;
                  *) typeoption=$2 ; shift 2 ;;
             esac ;;
-        --skip-boost)
-            skipboostoption="yes" ; shift 2 ;;
-        --skip-packages)
-            skippackagesoption="yes" ; shift 2 ;;
-        -q|--quick)
-            skipboostoption="yes" ; skippackagesoption="yes" ; shift 2 ;;
-        --boostrelease)
-            boostrelease="//boostrelease" ; shift 2 ;;
+	--skip-boost)
+	    skipboostoption="yes" ; shift 2 ;;
+	--skip-packages)
+	    skippackagesoption="yes" ; shift 2 ;;
+	-q|--quick)
+	    skipboostoption="yes" ; skippackagesoption="yes" ; shift 2 ;;
+	--boostrelease)
+	    boostrelease="//boostrelease" ; shift 2 ;;
         --) shift ; break ;;
         *) echo "Internal error!" ; exit 1 ;;
     esac
 done
 
-# git and getopt are required. In the unlikely case it's not yet installed, moving that part of the package install process
+# git is required. In the unlikely case it's not yet installed, moving that part of the package install process
 # here to an earlier part of the script:
+
+if [ "$skippackagesoption" != "yes" ]; then
+    sudo apt-get update
+    if ! command -v git &> /dev/null
+    then
+        sudo apt-get install -y git
+    fi
+fi
 
 if [ -n "$1" ]; then
     echo "Library path set to $1. Changing to that directory."
@@ -159,68 +145,72 @@ fi
 
 if git rev-parse --abbrev-ref HEAD | grep master ; then BOOST_BRANCH=master ; else BOOST_BRANCH=develop ; fi
 
+
 echo '==================================> INSTALL'
 
 # graphviz package added for historical reasons, might not be used.
 
 if [ "$skippackagesoption" != "yes" ]; then
 
-    brew install doxygen
-    brew install wget
-    brew tap adoptopenjdk/openjdk
-    brew install --cask adoptopenjdk11
-    brew install gnu-sed
-    brew install docbook
-    brew install docbook-xsl
+    # already done:
+    # sudo apt-get update
 
+    sudo apt-get install -y build-essential cmake curl default-jre-headless python3 rsync unzip wget
+
+    if [ "$typeoption" = "cppal" ]; then
+        sudo apt-get install -y bison docbook docbook-xml docbook-xsl flex libfl-dev libsaxonhe-java xsltproc
+    fi
     if [ "$typeoption" = "main" ]; then
-	brew install ghostscript
-	brew install texlive
-        brew install graphviz
-        sudo gem install public_suffix --version 4.0.7               # 4.0.7 from 2022 still supports ruby 2.5. Continue to use until ~2024.
-        sudo gem install css_parser --version 1.12.0                 # 1.12.0 from 2022 still supports ruby 2.5. Continue to use until ~2024.
-        sudo gem install asciidoctor --version 2.0.17
-        sudo gem install asciidoctor-pdf --version 2.3.4
-        pip3 install docutils --user
+        sudo apt-get install -y python3-pip ruby
+        sudo apt-get install -y bison docbook docbook-xml docbook-xsl docutils-doc docutils-common flex ghostscript graphviz libfl-dev libsaxonhe-java python3-docutils texlive texlive-latex-extra xsltproc
+	gem install public_suffix --version 4.0.7
+        sudo gem install asciidoctor --version 2.0.16
+        # the next two gems are for asciidoctor-pdf
+        sudo gem install public_suffix --version 4.0.7
+        sudo gem install css_parser --version 1.12.0
+	sudo gem install asciidoctor-pdf --version 2.3.4
+        sudo pip3 install docutils
         # which library is using rapidxml
         # wget -O rapidxml.zip http://sourceforge.net/projects/rapidxml/files/latest/download
         # unzip -n -d rapidxml rapidxml.zip
         pip3 install --user https://github.com/bfgroup/jam_pygments/archive/master.zip
-        pip3 install --user Jinja2==3.1.2
-        pip3 install --user MarkupSafe==2.1.1
-        sudo gem install pygments.rb --version 2.3.0
-        pip3 install --user Pygments==2.13.0
-        sudo gem install rouge --version 4.0.0
-        pip3 install --user Sphinx==5.2.1
-        pip3 install --user git+https://github.com/pfultz2/sphinx-boost@8ad7d424c6b613864976546d801439c34a27e3f6
-        # from dockerfile:
-        pip3 install --user myst-parser==0.18.1
-        pip3 install --user future==0.18.2
-        pip3 install --user six==1.14.0
+        pip3 install --user Jinja2==2.11.2
+        pip3 install --user MarkupSafe==1.1.1
+        gem install pygments.rb --version 2.1.0
+        pip3 install --user Pygments==2.2.0
+        sudo gem install rouge --version 3.26.1
+        echo "Sphinx==1.5.6" > constraints.txt
+        pip3 install --user Sphinx==1.5.6
+        pip3 install --user sphinx-boost==0.0.3
+        pip3 install --user -c constraints.txt git+https://github.com/rtfd/recommonmark@50be4978d7d91d0b8a69643c63450c8cd92d1212
 
         # Locking the version numbers in place offers a better guarantee of a known, good build.
-        # At the same time, it creates a perpetual outstanding task, to upgrade the gem and pip versions
+	# At the same time, it creates a perpetual outstanding task, to upgrade the gem and pip versions
         # because they are out-of-date. When upgrading everything check the Dockerfiles and the other build scripts.
     fi
-
-    # an alternate set of packages from https://www.boost.org/doc/libs/develop/doc/html/quickbook/install.html
-    # sudo port install libxslt docbook-xsl docbook-xml-4.2
 
     cd $BOOST_SRC_FOLDER
     cd ..
     mkdir -p tmp && cd tmp
-    if [ ! -f saxonhe.zip ]; then wget -O saxonhe.zip https://sourceforge.net/projects/saxon/files/Saxon-HE/9.9/SaxonHE9-9-1-4J.zip/download; fi
+
+    if which doxygen; then
+        echo "doxygen found"
+    else
+        echo "building doxygen"
+        if [ ! -d doxygen ]; then git clone -b 'Release_1_8_15' --depth 1 https://github.com/doxygen/doxygen.git && echo "not-cached" ; else echo "cached" ; fi
+        cd doxygen
+        cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Release
+        cd build
+        sudo make install
+        cd ../..
+    fi
+
+    if [ ! -f saxonhe.zip ]; then wget -O saxonhe.zip https://sourceforge.net/projects/saxon/files/Saxon-HE/9.9/SaxonHE9-9-1-4J.zip/download && echo "not-cached" ; else echo "cached" ; fi
     unzip -d saxonhe -o saxonhe.zip
     cd saxonhe
-
-    sudo rm /Library/Java/Extensions/Saxon-HE.jar || true
-    sudo cp saxon9he.jar /Library/Java/Extensions/Saxon-HE.jar
-    sudo chmod 755 /Library/Java/Extensions/Saxon-HE.jar
-
+    sudo rm /usr/share/java/Saxon-HE.jar || true
+    sudo cp saxon9he.jar /usr/share/java/Saxon-HE.jar
 fi
-
-# check this on apple silicon:
-export PATH="/usr/local/opt/gnu-sed/libexec/gnubin:$PATH"
 
 cd $BOOST_SRC_FOLDER
 
@@ -233,8 +223,8 @@ if [ "$skipboostoption" = "yes" ] ; then
     else
         cd ..
         if [ ! -d boost-root ]; then
-            echo "boost-root missing. Rerun this script without --skip-boost or --quick option."
-            exit 1
+	    echo "boost-root missing. Rerun this script without --skip-boost or --quick option."
+	    exit 1
         else
             cd boost-root
             export BOOST_ROOT=$(pwd)
@@ -269,7 +259,7 @@ else
     fi
 fi
 
-if [ "$skippackagesoption" != "yes" ]; then
+if [ "$skippackagesoption" != "yes" ] ; then
     mkdir -p build && cd build
     if [ ! -f docbook-xsl.zip ]; then
         wget -O docbook-xsl.zip https://sourceforge.net/projects/docbook/files/docbook-xsl/1.79.1/docbook-xsl-1.79.1.zip/download
@@ -301,8 +291,6 @@ if [ "$skipboostoption" != "yes" ] ; then
     git submodule update --init tools/boostdep
     git submodule update --init tools/docca
     git submodule update --init tools/quickbook
-    git submodule update --init tools/build
-    sed -i 's~GLOB "/usr/share/java/saxon/"~GLOB "/Library/Java/Extensions/" "/usr/share/java/saxon/"~' tools/build/src/tools/saxonhe.jam
 
     if [ "$typeoption" = "main" ]; then
         git submodule update --init tools/auto_index
@@ -320,12 +308,9 @@ fi
 
 # Update path
 
-pythonbasicversion=$(python3 --version | cut -d" " -f2 | cut -d"." -f1-2)
-newpathitem=~/Library/Python/$pythonbasicversion/bin
-if [[ ! "$PATH" =~ $newpathitem ]]; then
-    export PATH=$newpathitem:$PATH
+if [[ ! $PATH =~ \.local/bin ]]; then
+    export PATH=~/.local/bin:$PATH
 fi
-
 if [[ ! $PATH =~ dist/bin ]]; then
     export PATH=$BOOST_ROOT/dist/bin:$PATH
 fi
@@ -360,27 +345,22 @@ else
 fi
 
 if [ "$REPONAME" = "geometry" ]; then
-    set -x
-    echo "in the geometry exception. ./b2 $librarypath/doc/src/docutils/tools/doxygen_xml2qbk"
     ./b2 $librarypath/doc/src/docutils/tools/doxygen_xml2qbk
-    echo "running pwd"
-    pwd
-    echo "Running find command"
-    find . -name '*doxygen_xml2qbk*'
-    set +x
-    echo "Debugging gil. Running find sphinx-build"
-    find ~ -name "*sphinx-build*"
-    echo "Running pip3 list"
-    pip3 list
+    # adjusting PATH var instead
+    # cp dist/bin/doxygen_xml2qbk /usr/local/bin/
+    echo "Debugging for macos. which sphinx-build"
+    which sphinx-build || true
+    echo "Running ls dist/bin"
+    ls -al dist/bin || true
 fi
 
-# -----------------------------------
+# -------------------------------
 
 # the main compilation:
 
 if [ "$typeoption" = "main" ]; then
     ./b2 -q -d0 --build-dir=build --distdir=build/dist tools/quickbook tools/auto_index/build
-    echo "using quickbook : build/dist/bin/quickbook ; using auto-index : build/dist/bin/auto_index ; using docutils ; using doxygen ; using boostbook ; using asciidoctor ; using saxonhe ;" > tools/build/src/user-config.jam
+    echo "using quickbook : build/dist/bin/quickbook ; using auto-index : build/dist/bin/auto_index ; using docutils : /usr/share/docutils ; using doxygen ; using boostbook ; using asciidoctor ; using saxonhe ;" > tools/build/src/user-config.jam
     ./b2 -j3 $librarypath/doc${boostrelease}
 
 elif  [ "$typeoption" = "cppal" ]; then

@@ -31,31 +31,22 @@ jobs:
           - os: ubuntu-latest
             container: ubuntu:22.04
             packages: python2
-            skiplist: auto_index hof leaf qvm static_string
+            skiplist: auto_index
           - os: ubuntu-latest
             container: ubuntu:20.04
             packages: python
-            skiplist: auto_index leaf qvm static_string
-          - os: ubuntu-latest
-            container: ubuntu:18.04
-            packages: python
-            skiplist: auto_index leaf qvm static_string
+            skiplist: auto_index
           - os: ubuntu-latest
             container: ubuntu:22.04
             packages: python2
-            skiplist: auto_index hof static_string
+            # skiplist:
             flags: "--boostrelease"
           - os: ubuntu-latest
             container: ubuntu:20.04
             packages: python
-            skiplist: auto_index static_string
+            # skiplist:
             flags: "--boostrelease"
-          - os: ubuntu-latest
-            container: ubuntu:18.04
-            packages: python
-            skiplist: auto_index static_string
-            flags: "--boostrelease"
-
+            # Jinja 3.1.0 and later have dropped support for Python 3.6 and therefore won't run on Ubuntu 18.04. Removing tests for Ubuntu 18.
 
     timeout-minutes: 720
     runs-on: ${{matrix.os}}
@@ -67,7 +58,8 @@ jobs:
 
       - name: docs
         run: |
-            set -ex
+            set -x
+            set -e
             apt-get update
             DEBIAN_FRONTEND="noninteractive" apt-get install -y tzdata
             apt-get install -y git sudo
@@ -109,6 +101,11 @@ jobs:
 
             textpart4=${{ matrix.flags }}
             textpart5='
+                if [[ $? != 0 ]]; then
+                    echo "..failed. DOCS BUILD FAILED. LIBRARY $reponame"
+                else
+                    echo "LIBRARY $reponame SUCCEEDED."
+                fi
             fi
             '
 
@@ -130,10 +127,9 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            # why is boostorg/test failing
-            skiplist: auto_index hof leaf qvm static_string
+            skiplist: auto_index
           - os: macos-latest
-            skiplist: auto_index hof static_string
+            # skiplist:
             flags: "--boostrelease"
 
     timeout-minutes: 720
@@ -145,6 +141,7 @@ jobs:
 
       - name: docs
         run: |
+            set -x
             set -e
             cp build_docs/macosdocs.sh /usr/local/bin/
 
@@ -180,6 +177,12 @@ jobs:
             textpart4=${{ matrix.flags }}
 
             textpart5='
+                if [[ $? != 0 ]]; then
+                    echo "..failed. DOCS BUILD FAILED. LIBRARY $reponame"
+                    exit 1
+                else
+                    echo "LIBARY $reponame SUCCEEDED."
+                fi
             fi
             '
 
@@ -197,15 +200,15 @@ jobs:
       matrix:
         include:
           - os: windows-2019
-            skiplist: auto_index hana hof log parameter parameter_python static_string leaf qvm
+            skiplist: auto_index hana leaf log parameter parameter_python qvm
           - os: windows-2022
-            skiplist: auto_index hana hof log parameter parameter_python static_string leaf qvm
+            skiplist: auto_index hana log parameter parameter_python qvm
           - os: windows-2019
             flags: "-boostrelease"
-            skiplist: auto_index hana hof log parameter parameter_python static_string
+            skiplist: hana log parameter parameter_python python
           - os: windows-2022
             flags: "-boostrelease"
-            skiplist: auto_index hana hof log parameter parameter_python static_string
+            skiplist: hana log parameter parameter_python python
 
     timeout-minutes: 720
     runs-on: ${{matrix.os}}
@@ -260,8 +263,12 @@ jobs:
             $textpart5=@'
 
                 if ( ! $LASTEXITCODE -eq 0)  {
+                    echo "..failed. DOCS BUILD FAILED. LIBRARY $reponame"
                     echo "doc build failed in github actions. exiting."
                     exit 1
+                }
+                else {
+                    echo "LIBRARY $reponame SUCCEEDED."
                 }
             }
             '@

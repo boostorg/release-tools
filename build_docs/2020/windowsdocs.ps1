@@ -238,28 +238,24 @@ if ( -Not ${skip-packages} ) {
         choco install -y --no-progress ghostscript --version $ghostversion
         choco install -y --no-progress texlive
         choco install -y --no-progress graphviz
-        gem install public_suffix --version 4.0.7               # 4.0.7 from 2022 still supports ruby 2.5. Continue to use until ~2024.
-        gem install css_parser --version 1.12.0                 # 1.12.0 from 2022 still supports ruby 2.5. Continue to use until ~2024.
-        gem install asciidoctor --version 2.0.17
-        gem install asciidoctor-pdf --version 2.3.4
+        gem install public_suffix --version 4.0.7
+        gem install asciidoctor --version 2.0.16
+        gem install asciidoctor-pdf
         pip3 install docutils
         wget -O rapidxml.zip http://sourceforge.net/projects/rapidxml/files/latest/download
         unzip -n -d rapidxml rapidxml.zip
         #
         # pip3 had been using --user. what will happen without.
         pip3 install https://github.com/bfgroup/jam_pygments/archive/master.zip
-        pip3 install Jinja2==3.1.2
-        pip3 install MarkupSafe==2.1.1
-        gem install pygments.rb --version 2.3.0
-        pip3 install Pygments==2.13.0
-        gem install rouge --version 4.0.0
-        pip3 install Sphinx==5.2.1
-        pip3 install --user git+https://github.com/pfultz2/sphinx-boost@8ad7d424c6b613864976546d801439c34a27e3f6
-	# from dockerfile:
-        pip3 install myst-parser==0.18.1
-        pip3 install future==0.18.2
-        pip3 install six==1.14.0
-
+        pip3 install Jinja2==2.11.2
+        pip3 install MarkupSafe==1.1.1
+        gem install pygments.rb --version 2.1.0
+        pip3 install Pygments==2.2.0
+        gem install rouge --version 3.26.1
+        echo "Sphinx==1.5.6" > constraints.txt
+        pip3 install Sphinx==1.5.6
+        pip3 install sphinx-boost==0.0.3
+        pip3 install -c constraints.txt git+https://github.com/rtfd/recommonmark@50be4978d7d91d0b8a69643c63450c8cd92d1212
 
         refreshenv
 
