@@ -269,7 +269,12 @@ if ( -Not ${skip-packages} ) {
         {
                $env:Path += ";$newpathitem"
         }
-        New-Item -ItemType SymbolicLink -Path "C:\Program Files\gs\gs9.56.1\bin\gswin32c.exe" -Target "C:\Program Files\gs\gs9.56.1\bin\gswin64c.exe"
+
+        $file1="C:\Program Files\gs\gs9.56.1\bin\gswin32c.exe"
+        $file2="C:\Program Files\gs\gs9.56.1\bin\gswin64c.exe"
+	if (-not(Test-Path -Path $file1 -PathType Leaf)) {
+            New-Item -ItemType SymbolicLink -Path $file1 -Target $file2
+	}
 
         # Locking the version numbers in place offers a better guarantee of a known, good build.
         # At the same time, it creates a perpetual outstanding task, to upgrade the gem and pip versions
@@ -331,16 +336,25 @@ if( (Test-Path -Path $newpathitem) -and -Not ( $env:Path -like "*$newpathitem*")
 
 cd $BOOST_SRC_FOLDER
 
+function getlibrarypath {
+   param (
+       $localreponame
+       )
+   $locallibrarypath=git config --file .gitmodules --get submodule.$localreponame.path
+   if ($LASTEXITCODE -ne 0)  {
+       $locallibrarypath="libs/$localreponame"
+       $global:LASTEXITCODE=0
+   }
+   Write-Output "$locallibrarypath"
+   }
+
 if ( ${skip-boost} ) {
     # skip-boost was set. A reduced set of actions.
     if ( $BOOSTROOTLIBRARY -eq "yes" ) {
         cd $BOOSTROOTRELPATH
         $Env:BOOST_ROOT=Get-Location | Foreach-Object { $_.Path }
         echo "Env:BOOST_ROOT is $Env:BOOST_ROOT"
-        $librarypath=git config --file .gitmodules --get submodule.$REPONAME.path
-        if ( ! $LASTEXITCODE -eq 0) {
-          exit 1
-        }
+        $librarypath=getlibrarypath $REPONAME
     }
 
     else {
@@ -353,10 +367,7 @@ if ( ${skip-boost} ) {
             cd boost-root
             $Env:BOOST_ROOT=Get-Location | Foreach-Object { $_.Path }
             echo "Env:BOOST_ROOT is $Env:BOOST_ROOT"
-            $librarypath=git config --file .gitmodules --get submodule.$REPONAME.path
-            if ( ! $LASTEXITCODE -eq 0) {
-              exit 1
-            }
+            $librarypath=getlibrarypath $REPONAME
 
             if (Test-Path -Path "$librarypath")
             {
@@ -376,11 +387,7 @@ else {
         git pull
         $Env:BOOST_ROOT=Get-Location | Foreach-Object { $_.Path }
         echo "Env:BOOST_ROOT is $Env:BOOST_ROOT"
-        $librarypath=git config --file .gitmodules --get submodule.$REPONAME.path
-        if ( ! $LASTEXITCODE -eq 0) {
-          exit 1
-        }
-
+        $librarypath=getlibrarypath $REPONAME
     }
     else {
         cd ..
@@ -390,10 +397,7 @@ else {
             cd boost-root
             $Env:BOOST_ROOT=Get-Location | Foreach-Object { $_.Path }
             echo "Env:BOOST_ROOT is $Env:BOOST_ROOT"
-            $librarypath=git config --file .gitmodules --get submodule.$REPONAME.path
-            if ( ! $LASTEXITCODE -eq 0) {
-              exit 1
-            }
+            $librarypath=getlibrarypath $REPONAME
 
             if (Test-Path -Path "$librarypath")
             {
@@ -408,10 +412,7 @@ else {
             git pull
             $Env:BOOST_ROOT=Get-Location | Foreach-Object { $_.Path }
             echo "Env:BOOST_ROOT is $Env:BOOST_ROOT"
-            $librarypath=git config --file .gitmodules --get submodule.$REPONAME.path
-            if ( ! $LASTEXITCODE -eq 0) {
-              exit 1
-            }
+            $librarypath=getlibrarypath $REPONAME
 
             if (Test-Path -Path "$librarypath")
             {
