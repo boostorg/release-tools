@@ -6,11 +6,13 @@
 # (See accompanying file LICENSE_1_0.txt or copy at http://boost.org/LICENSE_1_0.txt)
 
 set -e
+shopt -s extglob
 
 scriptname="macosdocs.sh"
 
 # set defaults:
 boostrelease=""
+BOOSTROOTRELPATH=".."
 
 # git and getopt are required. If they are not installed, moving that part of the installation process
 # to an earlier part of the script:
@@ -36,7 +38,7 @@ export PATH="/usr/local/opt/gnu-getopt/bin:$PATH"
 
 # READ IN COMMAND-LINE OPTIONS
 
-TEMP=`/usr/local/opt/gnu-getopt/bin/getopt -o t:,h::,q:: --long type:,help::,skip-boost::,skip-packages::,quick::,boostrelease:: -- "$@"`
+TEMP=`/usr/local/opt/gnu-getopt/bin/getopt -o t:,h::,q:: --long type:,help::,skip-boost::,skip-packages::,quick::,boostrelease::,boostrootsubdir:: -- "$@"`
 eval set -- "$TEMP"
 
 # extract options and their arguments into variables.
@@ -58,6 +60,7 @@ optional arguments:
   --skip-packages       Skip installing all packages (pip, gem, apt, etc.) if you are certain that has already been done.
   -q, --quick           Equivalent to setting both --skip-boost and --skip-packages. If not sure, then don't skip these steps.
   --boostrelease        Add the target //boostrelease to the doc build. This target is used when building production releases.
+  --boostrootsubdir    If creating a boost-root directory, instead of placing it in ../ use a subdirectory instead.
 standard arguments:
   path_to_library       Where the library is located. Defaults to current working directory.
 """
@@ -80,6 +83,8 @@ standard arguments:
             skipboostoption="yes" ; skippackagesoption="yes" ; shift 2 ;;
         --boostrelease)
             boostrelease="//boostrelease" ; shift 2 ;;
+        --boostrootsubdir)
+            BOOSTROOTRELPATH="." ; shift 2 ;;
         --) shift ; break ;;
         *) echo "Internal error!" ; exit 1 ;;
     esac
@@ -207,7 +212,7 @@ if [ "$skippackagesoption" != "yes" ]; then
     # sudo port install libxslt docbook-xsl docbook-xml-4.2
 
     cd $BOOST_SRC_FOLDER
-    cd ..
+    cd $BOOSTROOTRELPATH
     mkdir -p tmp && cd tmp
     if [ ! -f saxonhe.zip ]; then wget -O saxonhe.zip https://sourceforge.net/projects/saxon/files/Saxon-HE/9.9/SaxonHE9-9-1-4J.zip/download; fi
     unzip -d saxonhe -o saxonhe.zip
@@ -237,7 +242,7 @@ if [ "$skipboostoption" = "yes" ] ; then
         export BOOST_ROOT=$(pwd)
         librarypath=$(getlibrarypath $REPONAME)
     else
-        cd ..
+	cd $BOOSTROOTRELPATH
         if [ ! -d boost-root ]; then
             echo "boost-root missing. Rerun this script without --skip-boost or --quick option."
             exit 1
@@ -245,7 +250,8 @@ if [ "$skipboostoption" = "yes" ] ; then
             cd boost-root
             export BOOST_ROOT=$(pwd)
             librarypath=$(getlibrarypath $REPONAME)
-            rsync -av $BOOST_SRC_FOLDER/ $librarypath
+            mkdir -p $librarypath
+            cp -r ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath}
         fi
     fi
 else
@@ -257,21 +263,19 @@ else
         export BOOST_ROOT=$(pwd)
         librarypath=$(getlibrarypath $REPONAME)
     else
-        cd ..
+        cd $BOOSTROOTRELPATH
         if [ ! -d boost-root ]; then
             git clone -b $BOOST_BRANCH https://github.com/boostorg/boost.git boost-root --depth 1
             cd boost-root
-            export BOOST_ROOT=$(pwd)
-            librarypath=$(getlibrarypath $REPONAME)
-            rsync -av $BOOST_SRC_FOLDER/ $librarypath
         else
             cd boost-root
             git checkout $BOOST_BRANCH
             git pull
-            export BOOST_ROOT=$(pwd)
-            librarypath=$(getlibrarypath $REPONAME)
-            rsync -av $BOOST_SRC_FOLDER/ $librarypath
         fi
+        export BOOST_ROOT=$(pwd)
+        librarypath=$(getlibrarypath $REPONAME)
+        mkdir -p $librarypath
+        cp -r ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath}
     fi
 fi
 
@@ -315,7 +319,7 @@ if [ "$skipboostoption" != "yes" ] ; then
         git submodule update --quiet --init --recursive
 
         # recopy the library as it might have been overwritten
-        rsync -av --delete $BOOST_SRC_FOLDER/ $librarypath
+	cp -r ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath}
     fi
 
     python3 tools/boostdep/depinst/depinst.py ../tools/quickbook
@@ -361,7 +365,7 @@ fi
 if [ -f $librarypath/doc/Jamfile ] || [ -f $librarypath/doc/jamfile ] || [ -f $librarypath/doc/Jamfile.v2 ] || [ -f $librarypath/doc/jamfile.v2 ] || [ -f $librarypath/doc/Jamfile.v3 ] || [ -f $librarypath/doc/jamfile.v3 ] || [ -f $librarypath/doc/Jamfile.jam ] || [ -f $librarypath/doc/jamfile.jam ] || [ -f $librarypath/doc/build.jam ] ; then
      : # ok
 else
-    echo "doc/Jamfile (or similar) is missing for this library. No need to compile. Exiting."
+    echo "doc/Jamfile or similar is missing for this library. No need to compile. Exiting."
     exit 0
 fi
 
@@ -399,7 +403,12 @@ if [ "${BOOSTROOTLIBRARY}" = "yes" ]; then
     echo "Build completed. Check the doc/ directory."
     echo ""
 else
+    if  [ "$BOOSTROOTRELPATH" = "." ]; then
+        pathfiller="/"
+    else
+        pathfiller="/${BOOSTROOTRELPATH}/"
+    fi
     echo ""
-    echo "Build completed. Check the results in $BOOST_SRC_FOLDER/../boost-root/$librarypath/doc"
+    echo "Build completed. Check the results in ${BOOST_SRC_FOLDER}${pathfiller}boost-root/$librarypath/doc"
     echo ""
 fi
