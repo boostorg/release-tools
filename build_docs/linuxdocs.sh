@@ -215,12 +215,18 @@ fi
 
 cd $BOOST_SRC_FOLDER
 
+getlibrarypath () {
+    localreponame=$1
+    locallibrarypath=$(git config --file .gitmodules --get submodule.$localreponame.path) || locallibrarypath="libs/$localreponame"
+    echo "$locallibrarypath"
+    }
+
 if [ "$skipboostoption" = "yes" ] ; then
     # skip-boost was set. A reduced set of actions.
     if [ "${BOOSTROOTLIBRARY}" = "yes" ]; then
         cd $BOOSTROOTRELPATH
         export BOOST_ROOT=$(pwd)
-        librarypath=$(git config --file .gitmodules --get submodule.$REPONAME.path)
+        librarypath=$(getlibrarypath $REPONAME)
     else
         cd ..
         if [ ! -d boost-root ]; then
@@ -229,7 +235,7 @@ if [ "$skipboostoption" = "yes" ] ; then
         else
             cd boost-root
             export BOOST_ROOT=$(pwd)
-            librarypath=$(git config --file .gitmodules --get submodule.$REPONAME.path)
+            librarypath=$(getlibrarypath $REPONAME)
             rsync -av $BOOST_SRC_FOLDER/ $librarypath
         fi
     fi
@@ -240,21 +246,21 @@ else
         git checkout $BOOST_BRANCH
         git pull
         export BOOST_ROOT=$(pwd)
-        librarypath=$(git config --file .gitmodules --get submodule.$REPONAME.path)
+        librarypath=$(getlibrarypath $REPONAME)
     else
         cd ..
         if [ ! -d boost-root ]; then
             git clone -b $BOOST_BRANCH https://github.com/boostorg/boost.git boost-root --depth 1
             cd boost-root
             export BOOST_ROOT=$(pwd)
-            librarypath=$(git config --file .gitmodules --get submodule.$REPONAME.path)
+            librarypath=$(getlibrarypath $REPONAME)
             rsync -av $BOOST_SRC_FOLDER/ $librarypath
         else
             cd boost-root
             git checkout $BOOST_BRANCH
             git pull
             export BOOST_ROOT=$(pwd)
-            librarypath=$(git config --file .gitmodules --get submodule.$REPONAME.path)
+            librarypath=$(getlibrarypath $REPONAME)
             rsync -av $BOOST_SRC_FOLDER/ $librarypath
         fi
     fi
