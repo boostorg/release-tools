@@ -11,7 +11,8 @@ param (
    [switch]${skip-boost} = $false,
    [switch]${skip-packages} = $false,
    [switch]$quick = $false,
-   [switch]$boostrelease = $false
+   [switch]$boostrelease = $false,
+   [switch]$boostrootsubdir = $false
 )
 
 $scriptname="windowsdocs.ps1"
@@ -21,7 +22,7 @@ $scriptname="windowsdocs.ps1"
 if ($help) {
 
 $helpmessage="
-usage: $scriptname [-help] [-type TYPE] [-skip-boost] [-skip-packages] [-quick] [-boostrelease] [path_to_library]
+usage: $scriptname [-help] [-type TYPE] [-skip-boost] [-skip-packages] [-quick] [-boostrelease] [-boostrootsubdir] [path_to_library]
 
 Builds library documentation.
 
@@ -35,6 +36,7 @@ optional arguments:
   -skip-packages        Skip installing all packages (pip, gem, apt, etc.) if you are certain that has already been done.
   -quick                Equivalent to setting both -skip-boost and -skip-packages. If not sure, then don't skip these steps.
   -boostrelease         Add the target //boostrelease to the doc build. This target is used when building production releases.
+  -boostrootsubdir      If creating a boost-root directory, instead of placing it in ../ use a subdirectory instead.
 
 
 standard arguments:
@@ -50,6 +52,13 @@ if ($boostrelease) {
  }
 else {
     ${boostreleasetarget} = ""
+}
+
+if ($boostrootsubdir) {
+    ${BOOSTROOTRELPATH} = "."
+  }
+else {
+    ${BOOSTROOTRELPATH} = ".."
 }
 
 pushd
@@ -74,6 +83,35 @@ if ( -Not ${skip-packages} ) {
     $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."
     Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
     refreshenv
+}
+
+function DownloadWithRetry([string] $url, [string] $downloadLocation, [int] $retries)
+{
+    while($true)
+    {
+        try
+        {
+	    # Invoke-WebRequest $url -OutFile $downloadLocation
+	    Start-BitsTransfer -Source $url -Destination $downloadLocation
+            break
+        }
+        catch
+        {
+            $exceptionMessage = $_.Exception.Message
+            Write-Host "Failed to download '$url': $exceptionMessage"
+            if ($retries -gt 0) {
+                $retries--
+                Write-Host "Waiting 10 seconds before retrying. Retries left: $retries"
+                Start-Sleep -Seconds 10
+ 
+            }
+            else
+            {
+                $exception = $_.Exception
+                throw $exception
+            }
+        }
+    }
 }
 
 if ($pathoption) {
@@ -190,7 +228,11 @@ if ( -Not ${skip-packages} ) {
         echo "Install chocolatey"
         iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
     }
-    choco install -y --no-progress rsync sed doxygen.install xsltproc docbook-bundle
+    choco install -y --no-progress rsync
+    choco install -y --no-progress sed
+    choco install -y --no-progress doxygen.install
+    choco install -y --no-progress xsltproc
+    choco install -y --no-progress docbook-bundle
     if ( -Not (Get-Command java -errorAction SilentlyContinue) )
     {
         choco install -y --no-progress openjdk --version=17.0.1
@@ -293,7 +335,7 @@ if ( -Not ${skip-packages} ) {
     # Copy-Item "C:\Program Files\doxygen\bin\doxygen.exe" "C:\Windows\System32\doxygen.exe"
 
     cd $BOOST_SRC_FOLDER
-    cd ..
+    cd $BOOSTROOTRELPATH
     if ( -Not (Test-Path -Path "tmp") )
     {
         mkdir tmp
@@ -312,9 +354,11 @@ if ( -Not ${skip-packages} ) {
         }
         if ( Test-Path -Path "saxonhe")
         {
-            rm Remove-Item saxonhe -Recurse -Force
+            Remove-Item saxonhe -Recurse -Force
         }
-        Start-BitsTransfer -Source $source -Destination $destination
+
+        # Start-BitsTransfer -Source $source -Destination $destination
+	DownloadWithRetry -url $source -downloadLocation $destination -retries 6
         Expand-Archive .\saxonhe.zip
         cd saxonhe
         if ( -Not (Test-Path -Path "C:\usr\share\java") )
@@ -358,7 +402,7 @@ if ( ${skip-boost} ) {
     }
 
     else {
-        cd ..
+	cd $BOOSTROOTRELPATH
         if ( -Not (Test-Path -Path "boost-root") ) {
             echo "boost-root missing. Rerun this script without the -skip-boost or -quick option."
             exit 1
@@ -373,7 +417,8 @@ if ( ${skip-boost} ) {
             {
                 rmdir $librarypath -Force -Recurse
             }
-            Copy-Item -Path $BOOST_SRC_FOLDER -Destination $librarypath -Recurse -Force
+            # Copy-Item -Exclude boost-root -Path $BOOST_SRC_FOLDER -Destination $librarypath -Recurse -Force
+	    robocopy $BOOST_SRC_FOLDER $librarypath /MIR /XD boost-root | Out-Null
             }
         }
     }
@@ -390,36 +435,29 @@ else {
         $librarypath=getlibrarypath $REPONAME
     }
     else {
-        cd ..
+	cd $BOOSTROOTRELPATH
         if ( -Not (Test-Path -Path "boost-root") ) {
             echo "cloning boost-root"
             git clone -b $BOOST_BRANCH https://github.com/boostorg/boost.git boost-root --depth 1
             cd boost-root
-            $Env:BOOST_ROOT=Get-Location | Foreach-Object { $_.Path }
-            echo "Env:BOOST_ROOT is $Env:BOOST_ROOT"
-            $librarypath=getlibrarypath $REPONAME
-
-            if (Test-Path -Path "$librarypath")
-            {
-                rmdir $librarypath -Force -Recurse
-            }
-            Copy-Item -Path $BOOST_SRC_FOLDER -Destination $librarypath -Recurse -Force
         }
         else {
             echo "updating boost-root"
             cd boost-root
             git checkout $BOOST_BRANCH
             git pull
-            $Env:BOOST_ROOT=Get-Location | Foreach-Object { $_.Path }
-            echo "Env:BOOST_ROOT is $Env:BOOST_ROOT"
-            $librarypath=getlibrarypath $REPONAME
-
-            if (Test-Path -Path "$librarypath")
-            {
-                rmdir $librarypath -Force -Recurse
-            }
-            Copy-Item -Path $BOOST_SRC_FOLDER -Destination $librarypath -Recurse -Force
         }
+
+        $Env:BOOST_ROOT=Get-Location | Foreach-Object { $_.Path }
+        echo "Env:BOOST_ROOT is $Env:BOOST_ROOT"
+        $librarypath=getlibrarypath $REPONAME
+
+        if (Test-Path -Path "$librarypath")
+        {
+            rmdir $librarypath -Force -Recurse
+        }
+        # Copy-Item -Exclude boost-root -Path $BOOST_SRC_FOLDER -Destination $librarypath -Recurse -Force
+	robocopy $BOOST_SRC_FOLDER $librarypath /MIR /XD boost-root | Out-Null
     }
 }
 
@@ -470,7 +508,8 @@ if ( -Not ${skip-boost} ) {
         {
             rmdir $librarypath -Force -Recurse
         }
-        Copy-Item -Path $BOOST_SRC_FOLDER -Destination $librarypath -Recurse -Force
+        # Copy-Item -Exclude boost-root -Path $BOOST_SRC_FOLDER -Destination $librarypath -Recurse -Force
+	robocopy $BOOST_SRC_FOLDER $librarypath /MIR /XD boost-root | Out-Null
     }
 
     $matcher='\.saxonhe_jar = \$(jar\[1\]) ;$'
@@ -525,7 +564,7 @@ if ( -Not (Test-Path -Path $librarypath/doc/ )) {
 if ( (Test-Path -Path $librarypath/doc/Jamfile) -or (Test-Path -Path $librarypath/doc/Jamfile.v2) -or (Test-Path -Path $librarypath/doc/Jamfile.v3) -or (Test-Path -Path $librarypath/doc/Jamfile.jam) -or (Test-Path -Path $librarypath/doc/build.jam)) {
   }
 else {
-    echo "doc/Jamfile (or similar) is missing for this library. No need to compile. Exiting."
+    echo "doc/Jamfile or similar is missing for this library. No need to compile. Exiting."
     exit 0
 }
 
@@ -582,8 +621,14 @@ if ($BOOSTROOTLIBRARY -eq "yes") {
     echo ""
 }
 else {
+    if ($BOOSTROOTRELPATH -eq ".") {
+        pathfiller="/"
+    }
+    else {
+        pathfiller="/${BOOSTROOTRELPATH}/"
+    }
     echo ""
-    echo "Build completed. Check the results in $BOOST_SRC_FOLDER/../boost-root/$librarypath/doc"
+    echo "Build completed. Check the results in ${BOOST_SRC_FOLDER}${pathfiller}boost-root/$librarypath/doc"
     echo ""
 }
 
