@@ -622,10 +622,10 @@ if ($BOOSTROOTLIBRARY -eq "yes") {
 }
 else {
     if ($BOOSTROOTRELPATH -eq ".") {
-        pathfiller="/"
+        $pathfiller="/"
     }
     else {
-        pathfiller="/${BOOSTROOTRELPATH}/"
+        $pathfiller="/${BOOSTROOTRELPATH}/"
     }
     echo ""
     echo "Build completed. Check the results in ${BOOST_SRC_FOLDER}${pathfiller}boost-root/$librarypath/doc"
