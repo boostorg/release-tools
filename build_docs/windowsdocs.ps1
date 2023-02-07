@@ -502,7 +502,7 @@ if ( -Not ${skip-boost} ) {
         git submodule update --quiet --init --recursive
     }
 
-    # Recopy the library, as it might have been overwritten by the submodule updates that just occurred.
+    # Recopy the library, if it was overwritten by the submodule updates that just occurred. Might not be necessary.
     if ( -Not ($BOOSTROOTLIBRARY -eq "yes") ) {
         if (Test-Path -Path "$librarypath")
         {

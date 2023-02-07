@@ -77,7 +77,7 @@ jobs:
             git submodule update --init
 
             # Run at least one full build that installs everything
-            cd libs/system
+            cd libs/accumulators
             linuxdocs.sh ${{ matrix.flags }}
             cd ../..
 

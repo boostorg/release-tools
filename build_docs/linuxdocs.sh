@@ -7,6 +7,7 @@
 
 set -e
 shopt -s extglob
+shopt -s dotglob
 
 scriptname="linuxdocs.sh"
 
@@ -243,6 +244,7 @@ if [ "$skipboostoption" = "yes" ] ; then
             librarypath=$(getlibrarypath $REPONAME)
 	    mkdir -p $librarypath
 	    cp -r ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath}
+            # rsync -av $BOOST_SRC_FOLDER/ $librarypath
         fi
     fi
 else
@@ -267,6 +269,7 @@ else
         librarypath=$(getlibrarypath $REPONAME)
         mkdir -p $librarypath
         cp -r ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath}
+        # rsync -av $BOOST_SRC_FOLDER/ $librarypath
     fi
 fi
 
@@ -307,8 +310,11 @@ if [ "$skipboostoption" != "yes" ] ; then
         git submodule update --init tools/auto_index
         git submodule update --quiet --init --recursive
 
-        # recopy the library as it might have been overwritten
-        cp -r ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath}
+        # recopy the library if it was overwritten. This step might not be necessary.
+        if [ ! "${BOOSTROOTLIBRARY}" = "yes" ]; then
+            cp -r ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath}
+            # rsync -av --delete $BOOST_SRC_FOLDER/ $librarypath
+        fi
     fi
 
     python3 tools/boostdep/depinst/depinst.py ../tools/quickbook
