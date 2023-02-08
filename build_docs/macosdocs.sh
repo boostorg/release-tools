@@ -319,11 +319,11 @@ if [ "$skipboostoption" != "yes" ] ; then
 
     if [ "$typeoption" = "main" ]; then
         git submodule update --init tools/auto_index
-        git submodule update --quiet --init --recursive
+        python3 tools/boostdep/depinst/depinst.py ../tools/auto_index
 
         # recopy the library if it was overwritten. This step might not be necessary.
         if [ ! "${BOOSTROOTLIBRARY}" = "yes" ]; then
-            cp -r ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath}
+            cp -rf ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath}
             # rsync -av --delete $BOOST_SRC_FOLDER/ $librarypath
         fi
     fi
