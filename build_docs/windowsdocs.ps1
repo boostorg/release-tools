@@ -499,7 +499,7 @@ if ( -Not ${skip-boost} ) {
 
     if ($typeoption -eq "main") {
         git submodule update --init tools/auto_index
-        git submodule update --quiet --init --recursive
+        python tools/boostdep/depinst/depinst.py ../tools/auto_index
     }
 
     # Recopy the library, if it was overwritten by the submodule updates that just occurred. Might not be necessary.
