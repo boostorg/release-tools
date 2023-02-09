@@ -39,7 +39,7 @@ optional arguments:
   --skip-packages	Skip installing all packages (pip, gem, apt, etc.) if you are certain that has already been done.
   -q, --quick		Equivalent to setting both --skip-boost and --skip-packages. If not sure, then don't skip these steps.
   --boostrelease	Add the target //boostrelease to the doc build. This target is used when building production releases.
-  --boostrootsubdir	If creating a boost-root directory, instead of placing it in ../ use a subdirectory instead.
+  --boostrootsubdir	If creating a boost-root directory, instead of placing it in ../ use a subdirectory.
 standard arguments:
   path_to_library	Where the library is located. Defaults to current working directory.
 """
@@ -212,7 +212,7 @@ if [ "$skippackagesoption" != "yes" ]; then
         cd ../..
     fi
 
-    if [ ! -f saxonhe.zip ]; then wget -O saxonhe.zip https://sourceforge.net/projects/saxon/files/Saxon-HE/9.9/SaxonHE9-9-1-4J.zip/download && echo "not-cached" ; else echo "cached" ; fi
+    if [ ! -f saxonhe.zip ]; then curl -s -S --retry 10 -L -o saxonhe.zip https://sourceforge.net/projects/saxon/files/Saxon-HE/9.9/SaxonHE9-9-1-4J.zip/download && echo "not-cached" ; else echo "cached" ; fi
     unzip -d saxonhe -o saxonhe.zip
     cd saxonhe
     sudo rm /usr/share/java/Saxon-HE.jar || true
@@ -310,7 +310,7 @@ if [ "$skipboostoption" != "yes" ] ; then
         git submodule update --init tools/auto_index
         python3 tools/boostdep/depinst/depinst.py ../tools/auto_index
 
-        # recopy the library if it was overwritten. This step might not be necessary.
+        # recopy the library if it was overwritten.
         if [ ! "${BOOSTROOTLIBRARY}" = "yes" ]; then
             cp -rf ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath}
             # rsync -av --delete $BOOST_SRC_FOLDER/ $librarypath

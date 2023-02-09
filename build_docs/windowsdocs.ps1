@@ -36,7 +36,7 @@ optional arguments:
   -skip-packages        Skip installing all packages (pip, gem, apt, etc.) if you are certain that has already been done.
   -quick                Equivalent to setting both -skip-boost and -skip-packages. If not sure, then don't skip these steps.
   -boostrelease         Add the target //boostrelease to the doc build. This target is used when building production releases.
-  -boostrootsubdir      If creating a boost-root directory, instead of placing it in ../ use a subdirectory instead.
+  -boostrootsubdir      If creating a boost-root directory, instead of placing it in ../ use a subdirectory.
 
 
 standard arguments:
@@ -502,7 +502,7 @@ if ( -Not ${skip-boost} ) {
         python tools/boostdep/depinst/depinst.py ../tools/auto_index
     }
 
-    # Recopy the library, if it was overwritten by the submodule updates that just occurred. Might not be necessary.
+    # Recopy the library, if it was overwritten by the submodule updates that just occurred.
     if ( -Not ($BOOSTROOTLIBRARY -eq "yes") ) {
         if (Test-Path -Path "$librarypath")
         {
