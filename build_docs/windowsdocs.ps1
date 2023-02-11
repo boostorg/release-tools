@@ -16,6 +16,7 @@ param (
 )
 
 $scriptname="windowsdocs.ps1"
+$originalpath=$env:PATH
 
 # Set-PSDebug -Trace 1
 
@@ -329,7 +330,8 @@ if ( -Not ${skip-packages} ) {
     $newpathitem="C:\Program Files\Git\usr\bin"
     if( (Test-Path -Path $newpathitem) -and -Not ( $env:Path -like "*$newpathitem*"))
     {
-           $env:Path += ";$newpathitem"
+        $temp_path = $env:Path.Trim(";"," ")
+        $env:Path = "${temp_path};${newpathitem}"
     }
 
     # Copy-Item "C:\Program Files\doxygen\bin\doxygen.exe" "C:\Windows\System32\doxygen.exe"
@@ -369,13 +371,20 @@ if ( -Not ${skip-packages} ) {
         cp Saxon-HE.jar "C:\usr\share\java\"
     }
 
+    # refreshenv might have deleted some path entries. Return those to the path.
+    $joinedpath="${originalpath};$env:PATH"
+    $joinedpath=$joinedpath.replace(';;',';')
+    $env:PATH = ($joinedpath -split ';' | Select-Object -Unique) -join ';'
+
 }
 
 # re-adding the path fix from above, even if skip-packages was set.
 $newpathitem="C:\Program Files\Git\usr\bin"
 if( (Test-Path -Path $newpathitem) -and -Not ( $env:Path -like "*$newpathitem*"))
     {
-     $env:Path += ";$newpathitem"
+        $temp_path = $env:Path.Trim(";"," ")
+        $env:Path = "${temp_path};${newpathitem}"
+
     }
 
 cd $BOOST_SRC_FOLDER
