@@ -63,6 +63,22 @@ else {
 
 pushd
 
+function refenv {
+
+    # Make `refreshenv` available right away, by defining the $env:ChocolateyInstall
+    # variable and importing the Chocolatey profile module.
+    # Note: Using `. $PROFILE` instead *may* work, but isn't guaranteed to.
+    $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."
+    Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
+
+    # refreshenv might delete path entries. Return those to the path.
+    $originalpath=$env:PATH
+    refreshenv
+    $joinedpath="${originalpath};$env:PATH"
+    $joinedpath=$joinedpath.replace(';;',';')
+    $env:PATH = ($joinedpath -split ';' | Select-Object -Unique) -join ';'
+    }
+
 # git is required. In the unlikely case it's not yet installed, moving that part of the package install process
 # here to an earlier part of the script:
 
@@ -77,12 +93,7 @@ if ( -Not ${skip-packages} ) {
         choco install -y --no-progress git
     }
 
-    # Make `refreshenv` available right away, by defining the $env:ChocolateyInstall
-    # variable and importing the Chocolatey profile module.
-    # Note: Using `. $PROFILE` instead *may* work, but isn't guaranteed to.
-    $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."
-    Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
-    refreshenv
+    refenv
 }
 
 function DownloadWithRetry([string] $url, [string] $downloadLocation, [int] $retries)
@@ -259,13 +270,8 @@ if ( -Not ${skip-packages} ) {
         choco install -y --no-progress wget
     }
     }
-    # Make `refreshenv` available right away, by defining the $env:ChocolateyInstall
-    # variable and importing the Chocolatey profile module.
-    # Note: Using `. $PROFILE` instead *may* work, but isn't guaranteed to.
-    $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."
-    Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
 
-    refreshenv
+    refenv
 
     if ( -Not (Get-Command python3 -errorAction SilentlyContinue) )
     {
@@ -302,8 +308,7 @@ if ( -Not ${skip-packages} ) {
         pip3 install future==0.18.2
         pip3 install six==1.14.0
 
-
-        refreshenv
+        refenv
 
 	# ghostscript fixes
         $newpathitem="C:\Program Files\gs\gs$ghostversion\bin"
@@ -329,7 +334,8 @@ if ( -Not ${skip-packages} ) {
     $newpathitem="C:\Program Files\Git\usr\bin"
     if( (Test-Path -Path $newpathitem) -and -Not ( $env:Path -like "*$newpathitem*"))
     {
-           $env:Path += ";$newpathitem"
+        $temp_path = $env:Path.Trim(";"," ")
+        $env:Path = "${temp_path};${newpathitem}"
     }
 
     # Copy-Item "C:\Program Files\doxygen\bin\doxygen.exe" "C:\Windows\System32\doxygen.exe"
@@ -375,7 +381,9 @@ if ( -Not ${skip-packages} ) {
 $newpathitem="C:\Program Files\Git\usr\bin"
 if( (Test-Path -Path $newpathitem) -and -Not ( $env:Path -like "*$newpathitem*"))
     {
-     $env:Path += ";$newpathitem"
+        $temp_path = $env:Path.Trim(";"," ")
+        $env:Path = "${temp_path};${newpathitem}"
+
     }
 
 cd $BOOST_SRC_FOLDER
