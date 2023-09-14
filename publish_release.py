@@ -37,6 +37,7 @@ import urllib
 import hashlib
 import re, os, sys
 import json
+from pathlib import Path
 
 jfrogURL = "https://boostorg.jfrog.io/artifactory/"
 
@@ -96,7 +97,6 @@ def uploadJFROGFile(sourceFileName, destRepo):
 	print ("Uploading: %s" % (sourceFileName))
 	os.system("jfrog rt upload %s %s" % (sourceFileName, destRepo))
 
-
 ##### 
 parser = OptionParser()
 parser.add_option("-b", "--beta",              default=None, type="int",  help="build a beta release", dest="beta")
@@ -114,14 +114,20 @@ boostVersion = args[0]
 dottedVersion = boostVersion.replace('_', '.')
 sourceRepo = "main/master/"
 if options.beta == None:
-	actualName = "boost_%s" % boostVersion
-	destRepo   = "main/release/%s/source/" % dottedVersion
+    actualName = "boost_%s" % boostVersion
+    hostedArchiveName = "boost_%s" % boostVersion
+    unzippedArchiveName = "boost_%s" % boostVersion
+    destRepo   = "main/release/%s/source/" % dottedVersion
 else:
-	actualName = "boost_%s_b%d" % (boostVersion, options.beta)
-	destRepo   = "main/beta/%s.beta%d/source/" % (dottedVersion, options.beta)
+    actualName = "boost_%s_b%d" % (boostVersion, options.beta)
+    hostedArchiveName = "boost_%s_beta%d" % (boostVersion, options.beta)
+    unzippedArchiveName = "boost_%s" % boostVersion
+    destRepo   = "main/beta/%s.beta%d/source/" % (dottedVersion, options.beta)
 
 if options.rc != None:
-	actualName += "_rc%d" % options.rc
+    actualName += "_rc%d" % options.rc
+    # hostedArchiveName
+    # unzippedArchiveName
 
 if options.progress:
 	print ("Creating release files named '%s'" % actualName)
@@ -148,10 +154,67 @@ for s in suffixes:
 	with open(jsonFileName, 'w', encoding='utf-8') as f:
 		json.dump(jsonData, f, ensure_ascii=False, indent=0)
 
-# Upload the files
+# Unzip an archive locally in ~/archives/tmp/ and move it to ~/archives/
+archiveDir=str(Path.home()) + "/archives"
+archiveDirTmp=str(Path.home()) + "/archives/tmp"
+archiveName=actualName + ".tar.gz"
+Path(archiveDir).mkdir(parents=True, exist_ok=True)
+if os.path.isdir(archiveDirTmp):
+    shutil.rmtree(archiveDirTmp)
+Path(archiveDirTmp).mkdir(parents=True, exist_ok=True)
+shutil.copyfile(archiveName, archiveDirTmp + "/" + archiveName )
+origDir = os.getcwd()
+os.chdir(archiveDirTmp)
+os.system("tar -xvf %s" % (archiveName))
+os.chdir(archiveDir)
+if os.path.isdir(hostedArchiveName):
+    shutil.rmtree(hostedArchiveName)
+shutil.move(archiveDirTmp + "/" + unzippedArchiveName, hostedArchiveName)
+os.chdir(origDir)
+
+# Upload the files to JFROG
 if options.progress:
 	print ("Uploading to: %s" % destRepo)
 if not options.dryrun:
 	for s in suffixes:
 		copyJFROGFile (sourceRepo, snapshotName, destRepo, actualName, s)
 		uploadJFROGFile (actualName + s + '.json', destRepo)
+
+# Upload the files to S3
+aws_profiles={
+              "production": "boost.org.v2",
+              "stage": "stage.boost.org.v2",
+              "revsys": "boost.revsys.dev",
+              "cppal-dev": "boost.org-cppal-dev-v2"
+              }
+aws_region="us-east-2"
+
+# Create rclone config file
+rclonefilecontents = """[remote1]
+type = s3
+provider = AWS
+env_auth = true
+region = us-east-2
+"""
+
+os.makedirs(str(Path.home()) + "/.config/rclone", exist_ok=True);
+with open(str(Path.home()) + "/.config/rclone/rclone.conf","w") as f:
+    f.writelines(rclonefilecontents)
+
+archivePathLocal=str(Path.home()) + "/archives/" + hostedArchiveName + "/"
+if not shutil.which("rclone"):
+    print("rclone is not installed. Instructions:")
+    print("wget https://downloads.rclone.org/v1.64.0/rclone-v1.64.0-linux-amd64.deb; dpkg -i rclone-v1.64.0-linux-amd64.deb")
+elif not Path(str(Path.home()) + "/.aws/credentials").is_file():
+    print("AWS credentials are missing. Please add the file ~/.aws/credentials .")
+else:
+    if not options.dryrun:
+        for profile, bucket in aws_profiles.items():
+
+            # AWS cli method:
+            # archivePathRemote="s3://" + bucket + "/archives/" + hostedArchiveName + "/"
+            # os.system("aws s3 cp --recursive --region %s --profile %s %s %s" % (aws_region, profile, archivePathLocal, archivePathRemote))
+
+            # Rclone method:
+            archivePathRemote="remote1:" + bucket + "/archives/" + hostedArchiveName + "/"
+            os.system("export AWS_PROFILE=%s;rclone sync --transfers 16 --checksum %s %s" % (profile, archivePathLocal, archivePathRemote))
