@@ -37,10 +37,13 @@ RUN apt-get update \
         apt-transport-https \
         ca-certificates \
         vim \
+        sudo \
         python \
     && sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
     && dpkg-reconfigure --frontend=noninteractive locales \
     && update-locale LANG=en_US.UTF-8 \
+    && mkdir /tmp/aws_cli_install && cd /tmp/aws_cli_install && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip awscliv2.zip && ./aws/install && cd /root && rm -rf /tmp/aws_cli_install \
+    && mkdir /tmp/rclone_install && cd /tmp/rclone_install && wget https://downloads.rclone.org/v1.63.1/rclone-v1.63.1-linux-amd64.deb && dpkg -i rclone-v1.63.1-linux-amd64.deb && cd /root && rm -rf /tmp/rclone_install \
     && curl -s -S --retry 10 -L -o gh_2.16.1_linux_amd64.deb https://github.com/cli/cli/releases/download/v2.16.1/gh_2.16.1_linux_amd64.deb \
     && dpkg -i gh_2.16.1_linux_amd64.deb \
     && git clone -b 'Release_1_9_5' --depth 1 https://github.com/doxygen/doxygen.git \

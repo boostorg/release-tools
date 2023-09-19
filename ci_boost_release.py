@@ -645,6 +645,57 @@ class script(script_common):
         for filename in filenames:
             if self.sf_releases_key:
                 pass
+    def upload_to_s3(self):
+        """Upload the contents of the archive to S3 for website hosting."""
+
+        os.chdir(os.path.dirname(self.root_dir))
+
+        # if not shutil.which("aws"):
+        #     print("aws cli is missing. Cannot proceed.")
+        #     return
+
+        if not shutil.which("rclone"):
+            print("rclone is missing. Cannot proceed.")
+            return
+
+        web_environments=["PRODUCTION", "REVSYS", "STAGE", "CPPAL_DEV"]
+        for web_environment in web_environments:
+            if not (web_environment + "_AWS_ACCESS_KEY_ID") in os.environ:
+                print(web_environment + "_AWS_ACCESS_KEY_ID not set.")
+            elif not (web_environment + "_AWS_SECRET_ACCESS_KEY") in os.environ:
+                print(web_environment + "_AWS_SECRET_ACCESS_KEY not set.")
+            elif not (web_environment + "_BUCKET") in os.environ:
+                print(web_environment + "_BUCKET not set.")
+            else:
+                print("Uploading " + web_environment + " environment to S3.\n")
+                os.environ["AWS_ACCESS_KEY_ID"] = os.environ[web_environment + "_AWS_ACCESS_KEY_ID"]
+                os.environ["AWS_SECRET_ACCESS_KEY"] = os.environ[web_environment + "_AWS_SECRET_ACCESS_KEY"]
+                os.environ["S3_BUCKET"] = os.environ[web_environment + "_BUCKET"]
+                os.environ["AWS_DEFAULT_REGION"] = "us-east-2"
+
+                # Functional 'aws s3 sync' example:
+                # x = subprocess.run(['aws', 's3', 'sync', self.boost_release_name + '/', 's3://' + os.environ["S3_BUCKET"] + '/archives/' + self.branch + '/'], stderr=sys.stderr, stdout=sys.stdout, bufsize=1, text=True)
+
+                #
+                # Use rclone instead:
+                #
+
+                filecontents = """[remote1]
+type = s3
+provider = AWS
+env_auth = true
+region = us-east-2
+"""
+
+                os.makedirs("/root/.config/rclone", exist_ok=True);
+                with open("/root/.config/rclone/rclone.conf","w") as f:
+                    f.writelines(filecontents)
+                x = subprocess.run(['date'], stderr=sys.stderr, stdout=sys.stdout, bufsize=1, text=True)
+                print(x)
+                x = subprocess.run(['rclone', 'sync', '--checksum', self.boost_release_name + '/', 'remote1:' + os.environ["S3_BUCKET"] + '/archives/' + self.branch + '/'], stderr=sys.stderr, stdout=sys.stdout, bufsize=1, text=True)
+                print(x)
+                x = subprocess.run(['date'], stderr=sys.stderr, stdout=sys.stdout, bufsize=1, text=True)
+                print(x)
 
     def command_after_success(self):
         super(script,self).command_after_success()
@@ -670,5 +721,7 @@ class script(script_common):
                 '%s%s.zip.json'%(self.boost_release_name, self.archive_tag),
                 '%s%s.7z'%(self.boost_release_name, self.archive_tag),
                 '%s%s.7z.json'%(self.boost_release_name, self.archive_tag))
+
+        self.upload_to_s3()
 
 main(script)

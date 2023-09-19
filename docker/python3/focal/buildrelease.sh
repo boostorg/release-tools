@@ -4,7 +4,7 @@
 
 cd $HOME
 
-boostbranch=master
+boostbranch=develop
 if [ ! -d project ]; then
     git clone https://github.com/boostorg/boost project
     cd project
