@@ -169,7 +169,7 @@ def generatehtmlpages():
 
     # allmetadata['histogram']['name']="Histogram"            # sent pr. done.
     # allmetadata['parameter_python']['name']="Parameter Python Bindings"  # sent pr. done.
-    allmetadata["process"]["name"] = "Process"  # sent pr
+    # allmetadata["process"]["name"] = "Process"  # sent pr. done.
     # allmetadata['stl_interfaces']['name']="Stl_interfaces"  # sent pr. done.
     # allmetadata["utility/string_ref"]["name"] = "String_ref"  # sent pr
     allmetadata["compatibility"]["category"] = ["Workarounds"]  # sent pr
