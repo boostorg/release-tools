@@ -171,7 +171,7 @@ def generatehtmlpages():
     # allmetadata['parameter_python']['name']="Parameter Python Bindings"  # sent pr. done.
     allmetadata["process"]["name"] = "Process"  # sent pr
     # allmetadata['stl_interfaces']['name']="Stl_interfaces"  # sent pr. done.
-    allmetadata["utility/string_ref"]["name"] = "String_ref"  # sent pr
+    # allmetadata["utility/string_ref"]["name"] = "String_ref"  # sent pr
     allmetadata["compatibility"]["category"] = ["Workarounds"]  # sent pr
     # allmetadata['config']['category']=["Workarounds"]       # sent pr. done.
     # allmetadata['leaf']['category']=["Miscellaneous"]       # sent pr. done. obsolete.
