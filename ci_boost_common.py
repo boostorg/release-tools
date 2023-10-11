@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Copyright Rene Rivera 2016
+# Copyright Alan de Freitas 2023
 #
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or copy at
@@ -267,18 +268,17 @@ class script_common(object):
             self.root_dir = os.getcwd()
         else:
             self.root_dir = root_dir
-        self.build_dir = os.path.join(os.path.dirname(self.root_dir), "build")
+        if self.build_dir is None:
+            self.build_dir = os.path.join(os.path.dirname(self.root_dir), "build")
+        elif not os.path.isabs(_opt_.build_dir):
+            self.build_dir = os.path.join(self.root_dir, _opt_.build_dir)
         self.home_dir = os.path.expanduser("~")
 
         # ~ Read in the Boost version from the repo we are in.
         self.boost_version = branch
-        if os.path.exists(os.path.join(self.root_dir, "Jamroot")):
-            with codecs.open(os.path.join(self.root_dir, "Jamroot"), "r", "utf-8") as f:
-                for line in f.readlines():
-                    parts = line.split()
-                    if len(parts) >= 5 and parts[1] == "BOOST_VERSION":
-                        self.boost_version = parts[3]
-                        break
+        v = self.read_boost_version(os.path.join(self.root_dir, "Jamroot"))
+        if v is not None:
+            self.boost_version = v
         if not self.boost_version:
             self.boost_version = "default"
 
@@ -296,6 +296,16 @@ class script_common(object):
             utils.print_call_stats()
             raise
 
+    @staticmethod
+    def read_boost_version(jamroot_path):
+        if os.path.exists(jamroot_path):
+            with codecs.open(jamroot_path, "r", "utf-8") as f:
+                for line in f.readlines():
+                    parts = line.split()
+                    if len(parts) >= 5 and parts[1] == "BOOST_VERSION":
+                        return parts[3]
+        return None
+
     def init(self, opt, kargs):
         return kargs
 
@@ -310,6 +320,10 @@ class script_common(object):
                 if os.path.exists(self.root_dir):
                     os.chdir(self.root_dir)
                 getattr(self, action_m)()
+            else:
+                utils.log(
+                    "### %s not available in %s" % (action, self.__class__.__name__)
+                )
 
     def b2(self, *args, **kargs):
         cmd = ["b2", "--debug-configuration", "-j%s" % (self.jobs)]
@@ -404,7 +418,7 @@ class ci_cli:
 
     def command_clone(self):
         """
-        This clone mimicks the way Travis-CI clones a project's repo. So far
+        This clone mimics the way Travis-CI clones a project's repo. So far
         Travis-CI is the most limiting in the sense of only fetching partial
         history of the repo.
         """
@@ -433,6 +447,19 @@ class ci_cli:
         utils.check_call(
             "git", "submodule", "update", "--quiet", "--init", "--recursive"
         )
+
+    def command_checkout_post(self):
+        os.chdir(self.script.root_dir)
+        utils.check_call(
+            "git", "submodule", "update", "--quiet", "--init", "--recursive"
+        )
+
+    def command_test_override(self):
+        # CircleCI runs all the test subsets. So in order to avoid
+        # running the after_success we do it here as the build step
+        # will halt accordingly.
+        self.script.command_build()
+        self.script.command_after_success()
 
 
 class ci_travis(object):
