@@ -34,14 +34,14 @@ else:
     pythonbinary = "python3"
 
 
-def generatehtmlpages():
+def generatehtmlpages(source_dir, build_dir):
     #
     # Versions of ci_boost_release.py from 2016-2021 were calling http://www.boost.org/doc/generate.php
     # to download and update index.html and libs/libraries.htm in the archive bundles.
     # If the boost website is being redesigned, generate.php will eventually be deprecated and removed.
     # It will be convenient to have a self-sufficient release-tool that doesn't depend on the website.
     #
-    # This function generatehtmlpages creates the files index.html and libs/libraries.htm.
+    # This function creates the index.html and libs/libraries.htm files.
     #
 
     boostlibrarycategories = defaultdict(dict)
@@ -76,8 +76,9 @@ def generatehtmlpages():
 
     for category in boostlibrarycategories:
         boostlibrarycategories[category]["libraries"] = []
-
+    # libraries in libs/* we should skip
     boostlibrariestoskip = ["libs/detail", "libs/numeric", "libs/winapi"]
+    # libraries not in libs/* we should add
     boostlibrariestoadd = [
         "libs/numeric/conversion",
         "libs/numeric/interval",
@@ -90,8 +91,10 @@ def generatehtmlpages():
     def names_to_string(names):
         if isinstance(names, list):
             last_name = names.pop()
-            if len(names) > 0:
-                return ", ".join(names) + " and " + last_name
+            if len(names) > 1:
+                return ", ".join(names) + ", and " + last_name
+            elif len(names) == 1:
+                return names[0] + " and " + last_name
             else:
                 return last_name
         else:
@@ -113,6 +116,7 @@ def generatehtmlpages():
     all_libraries = []
     all_libraries.extend(boostlibrariestoadd)
 
+    # add all libraries in libs/*
     for directoryname in glob.iglob("libs/*", recursive=False):
         if (
             os.path.isdir(directoryname)
@@ -120,7 +124,7 @@ def generatehtmlpages():
             and os.path.isfile(directoryname + "/meta/libraries.json")
         ):  # filter dirs
             all_libraries.append(directoryname)
-
+    # get meta data from each library
     for directoryname in all_libraries:
         librarypath = re.sub(r"^libs/", "", directoryname)
         with open(
@@ -140,6 +144,7 @@ def generatehtmlpages():
     # pprint.pprint(allmetadata)
     # quit()
 
+    # Identify documentation paths and generate author strings
     for key, value in allmetadata.items():
         # fix documentation
         # if not "documentation" in value:
@@ -152,15 +157,13 @@ def generatehtmlpages():
             allmetadata[key]["documentation_modified"] = (
                 value["librarypath"] + "/" + allmetadata[key]["documentation"]
             )
-            if re.search("/$", allmetadata[key]["documentation_modified"]):
-                allmetadata[key]["documentation_modified"] = (
-                    allmetadata[key]["documentation_modified"] + "index.html"
-                )
-        # modify description
+            if allmetadata[key]["documentation_modified"].endswith("/"):
+                allmetadata[key]["documentation_modified"] += "index.html"
+        # removes any trailing whitespace and period from the description
         allmetadata[key]["description_modified"] = re.sub(
             r"\s*\.\s*$", "", allmetadata[key]["description"]
         )
-        # modify authors
+        # create string with authors name
         allmetadata[key]["authors_modified"] = names_to_string(
             allmetadata[key]["authors"]
         )
@@ -182,24 +185,21 @@ def generatehtmlpages():
         for library in allmetadata:
             if category in allmetadata[library]["category"]:
                 boostlibrarycategories[category]["libraries"].append(library)
-            # sort
+            # sort libraries in this category by name
             boostlibrarycategories[category]["libraries"].sort(
                 key=lambda x: allmetadata[x]["name"].lower()
             )
 
-    # sort allmetadata
+    # sort allmetadata by name
     sorted_tuples = sorted(allmetadata.items(), key=lambda x: x[1]["name"].lower())
     allmetadata = {k: v for k, v in sorted_tuples}
 
-    # |sort(attribute="1.name",case_sensitive=False)
-
-    # pprint.pprint(boostlibrarycategories)
-    # quit()
-
-    for sourcefile in ["index.html", "libs/libraries.htm"]:
+    # generate index files
+    for sourcefilename in ["index.html", "libs/libraries.htm"]:
+        sourcefile = os.path.join(source_dir, sourcefilename)
         with open(sourcefile, "r", encoding="utf-8") as file:
             file_contents = file.read()
-        if sourcefile == "libs/libraries.htm":
+        if sourcefilename == "libs/libraries.htm":
             file_contents = file_contents.replace("charset=iso-8859-1", "charset=utf-8")
             file_contents = file_contents.replace(
                 "{{#categorized}}\n",
@@ -223,7 +223,7 @@ def generatehtmlpages():
 }}
 """
             file_contents = file_contents.replace(string, "")
-        elif sourcefile == "index.html":
+        elif sourcefilename == "index.html":
             string = """      {{#is_develop}}Development Snapshot{{/is_develop}}
 """
             file_contents = file_contents.replace(string, "")
@@ -271,7 +271,9 @@ def generatehtmlpages():
             "makes the standard integer types safely available in namespace boost without placing any names in namespace std",
         )
         # print(data)
-        with open(sourcefile, "w", encoding="utf-8") as f:
+        destfile = os.path.join(build_dir, sourcefilename)
+        utils.makedirs(os.path.dirname(destfile))
+        with open(destfile, "w", encoding="utf-8") as f:
             print(data, file=f)
 
 
@@ -301,6 +303,18 @@ class script(script_common):
         opt.add_option("--mode", help="mode ('build' or 'check', default 'build')")
         self.mode = os.getenv("MODE", "build")
 
+        opt.add_option(
+            "--build-dir",
+            help="override the build dir (default ../build)",
+            default=None,
+        )
+        self.build_dir = None
+
+        opt.add_option(
+            "--releases-dir", help="override the release dir (default ..)", default=None
+        )
+        self.releases_dir = None
+
         return kargs
 
     def start(self):
@@ -317,9 +331,11 @@ class script(script_common):
 
     def command_install(self):
         super(script, self).command_install()
+        # These dependencies are installed in the build dir
         self.command_install_rapidxml()
-        self.command_install_docutils()
         self.command_install_docbook()
+        # Host dependencies
+        self.command_install_docutils()
         self.command_install_sphinx()
         self.command_install_asciidoctor()
 
@@ -381,6 +397,11 @@ class script(script_common):
 
     def command_install_asciidoctor(self):
         os.chdir(self.build_dir)
+        if os.geteuid() != 0:
+            os.environ["GEM_HOME"] = os.path.join(self.build_dir, ".gems")
+            os.environ["PATH"] += os.pathsep + os.path.join(
+                self.build_dir, ".gems", "bin"
+            )
         utils.check_call("gem", "install", "asciidoctor", "--version", "1.5.8")
         utils.check_call("asciidoctor", "--version")
         utils.check_call("gem", "install", "rouge")
@@ -396,6 +417,32 @@ class script(script_common):
             "https://github.com/bfgroup/jam_pygments/archive/master.zip",
         )
         os.chdir(self.root_dir)
+
+    @staticmethod
+    def parse_semver(s):
+        parts = s.split(".")
+        try:
+            major = int(parts[0]) if len(parts) > 0 else 0
+            minor = int(parts[1]) if len(parts) > 1 else 0
+            patch = int(parts[2]) if len(parts) > 2 else 0
+        except (ValueError, IndexError):
+            return None
+        return major, minor, patch
+
+    @staticmethod
+    def is_semver_compatible(a, b):
+        if a is None:
+            return b is None
+        if type(a) is str:
+            a = script.parse_semver(a)
+        if type(b) is str:
+            b = script.parse_semver(b)
+        if a[0] > 0:
+            return a[0] == b[0]
+        elif a[1] > 0:
+            return a[1] == b[1]
+        else:
+            return a[2] == b[2]
 
     def command_before_build(self):
         super(script, self).command_before_build()
@@ -490,6 +537,7 @@ class script(script_common):
         utils.check_call("git", "clean", "-dfqx")
 
         # Set up build config.
+        docutils_path = "/usr/share/docutils"
         utils.make_file(
             os.path.join(self.build_dir, "site-config.jam"),
             'using quickbook : "%s" ;'
@@ -498,7 +546,7 @@ class script(script_common):
             % (os.path.join(self.build_dir, "dist", "bin", "auto_index"))
             if enable_auto_index
             else "",
-            "using docutils : /usr/share/docutils ;",
+            "using docutils : %s ;" % docutils_path,
             "using doxygen ;",
             'using boostbook : "%s" : "%s" ;'
             % (
@@ -524,12 +572,13 @@ class script(script_common):
             )
             return
 
+        exclude_libraries = {"beast"}
         doc_build = self.b2(
             "-q",  # '-d0',
             "--build-dir=%s" % (self.build_dir),
             "--distdir=%s" % (os.path.join(self.build_dir, "dist")),
             "--release-build",
-            "--exclude-libraries=beast",
+            "--exclude-libraries=%s" % ",".join(exclude_libraries),
             "auto-index=on" if enable_auto_index else "auto-index=off",
             "--enable-index" if enable_auto_index else "",
             parallel=True,
@@ -540,6 +589,7 @@ class script(script_common):
             utils.mem_info()
         doc_build.join()
 
+        # Try to build beast docs separately to avoid breaking the build
         try:
             self.b2(
                 "-q",  # '-d0',
@@ -550,12 +600,48 @@ class script(script_common):
         except:
             pass
 
-        # Download some generated files.
+        # Build antora docs
+        ## Determine the boost branch for which the antora script should
+        ## generate the documentation
         os.chdir(self.root_dir)
-        # utils.check_call('wget', '-O', 'libs/libraries.htm', 'http://www.boost.org/doc/generate.php?page=libs/libraries.htm&version=%s'%(self.boost_version));
-        # utils.check_call('wget', '-O', 'index.html', 'http://www.boost.org/doc/generate.php?page=index.html&version=%s'%(self.boost_version));
-        # generatehtmlpages is replacing generate.php
-        generatehtmlpages()
+        if self.branch is None:
+            self.branch = "develop"
+            output = subprocess.check_output(["git", "branch"]).decode("utf-8")
+            lines = output.split("\n")
+            for line in lines:
+                if line.startswith("*"):
+                    current_branch = line[2:]
+                    self.branch = current_branch
+                    break
+
+        ## Determine the branch of site-docs to use
+        if self.branch == "master":
+            checkout_branch = "master"
+        else:
+            checkout_branch = "develop"
+
+        # Call antora project main script
+        os.chdir(self.build_dir)
+        antora_dir = os.path.join(self.build_dir, "antora")
+        if not os.path.exists(antora_dir):
+            utils.check_call(
+                "git",
+                "clone",
+                "--depth=1",
+                "--branch=%s" % checkout_branch,
+                "https://github.com/cppalliance/site-docs.git",
+                "antora",
+            )
+        os.chdir(antora_dir)
+        if self.parse_semver(self.branch) is not None:
+            libdoc_branch = self.boost_version
+        else:
+            libdoc_branch = self.branch
+        utils.check_call(os.path.join(antora_dir, "libdoc.sh"), libdoc_branch)
+
+        # Render the libs/libraries and index.html templates in-place
+        os.chdir(self.root_dir)
+        generatehtmlpages(self.root_dir, self.build_dir)
 
         # Clean up some extra build files that creep in. These are
         # from stuff that doesn't obey the build-dir options.
@@ -569,20 +655,50 @@ class script(script_common):
         )
 
         # Make the real distribution tree from the base tree.
-        os.chdir(os.path.join(self.build_dir))
-        utils.check_call(
-            "wget",
-            "https://raw.githubusercontent.com/boostorg/release-tools/master/MakeBoostDistro.py",
-            "-O",
-            "MakeBoostDistro.py",
+        # This will also copy the docs generated in-source
+        if self.releases_dir is None:
+            self.releases_dir = os.path.dirname(self.root_dir)
+        elif not os.path.isabs(self.releases_dir):
+            self.releases_dir = os.path.join(self.root_dir, self.releases_dir)
+            utils.makedirs(self.releases_dir)
+        if os.path.isfile("MakeBoostDistro.py"):
+            import MakeBoostDistro
+
+            os.chdir(self.releases_dir)
+            MakeBoostDistro.main(self.root_dir, self.boost_release_name)
+        else:
+            os.chdir(os.path.join(self.build_dir))
+            utils.check_call(
+                "wget",
+                "https://raw.githubusercontent.com/boostorg/release-tools/master/MakeBoostDistro.py",
+                "-O",
+                "MakeBoostDistro.py",
+            )
+            utils.check_call("chmod", "+x", "MakeBoostDistro.py")
+            os.chdir(os.path.dirname(self.root_dir))
+            utils.check_call(
+                pythonbinary,
+                os.path.join(self.build_dir, "MakeBoostDistro.py"),
+                self.root_dir,
+                self.boost_release_name,
+            )
+
+        # Patch release with the html generate in-place
+        for sourcefilename in ["index.html", "libs/libraries.htm"]:
+            shutil.copyfile(
+                os.path.join(self.build_dir, sourcefilename),
+                os.path.join(
+                    self.releases_dir, self.boost_release_name, sourcefilename
+                ),
+            )
+
+        # Patch release with antora docs
+        antora_lib_docs = os.path.join(self.build_dir, "antora/build/lib/doc")
+        release_lib_docs = os.path.join(
+            self.releases_dir, self.boost_release_name, "libs"
         )
-        utils.check_call("chmod", "+x", "MakeBoostDistro.py")
-        os.chdir(os.path.dirname(self.root_dir))
-        utils.check_call(
-            pythonbinary,
-            os.path.join(self.build_dir, "MakeBoostDistro.py"),
-            self.root_dir,
-            self.boost_release_name,
+        shutil.copytree(
+            antora_lib_docs, release_lib_docs, symlinks=False, dirs_exist_ok=True
         )
 
         packages = []
@@ -590,7 +706,7 @@ class script(script_common):
 
         # Create packages for LF style content.
         if self.eol == "LF":
-            os.chdir(os.path.dirname(self.root_dir))
+            os.chdir(self.releases_dir)
             os.environ["GZIP"] = "-9"
             os.environ["BZIP2"] = "-9"
             archive_files.append(
@@ -622,7 +738,7 @@ class script(script_common):
 
         # Create packages for CRLF style content.
         if self.eol == "CRLF":
-            os.chdir(os.path.dirname(self.root_dir))
+            os.chdir(self.releases_dir)
             archive_files.append(
                 "%s%s.zip" % (self.boost_release_name, self.archive_tag)
             )
