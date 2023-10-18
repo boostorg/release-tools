@@ -637,7 +637,10 @@ class script(script_common):
             libdoc_branch = self.boost_version
         else:
             libdoc_branch = self.branch
-        utils.check_call(os.path.join(antora_dir, "libdoc.sh"), libdoc_branch)
+        utils.check_call("dos2unix", os.path.join(antora_dir, "libdoc.sh"))
+        utils.check_call("dos2unix", os.path.join(antora_dir, "build.sh"))
+        utils.check_call("dos2unix", os.path.join(antora_dir, "antora-ui", "build.sh"))
+        utils.check_call("bash", os.path.join(antora_dir, "libdoc.sh"), libdoc_branch)
 
         # Render the libs/libraries and index.html templates in-place
         os.chdir(self.root_dir)
