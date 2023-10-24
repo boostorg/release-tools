@@ -71,7 +71,8 @@ RUN apt-get update \
     && curl -s -S --retry 10 -L -o docbook-xsl.zip https://sourceforge.net/projects/docbook/files/docbook-xsl/1.79.1/docbook-xsl-1.79.1.zip/download \
     && unzip -n -d docbook-xsl docbook-xsl.zip \
     && gem install asciidoctor --version 2.0.17 \
-    && asciidoctor --version \
+    && gem install asciidoctor-diagram --version 2.2.14 \
+    && gem install asciidoctor-multipage --version 0.0.18 \
     && gem install rouge --version 4.0.0 \
     && gem install pygments.rb --version 2.3.0 \
     && pip3 install --user Pygments==2.13.0 \

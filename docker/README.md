@@ -10,3 +10,5 @@ While there should preferably be only one official docker image to build the boo
 | docker/python3/bionic/Dockerfile | Python3 on Bionic | cppalliance/boost_superproject_build:python3-build2 | late 2021 through most of 2022 this was in production |
 | docker/python3/focal/Dockerfile | Python3 on Focal | cppalliance/boost_superproject_build:20.04-v1 | 2023-01 Updates most gem and pip packages |
 | docker/python3/focal/Dockerfile | Python3 on Focal | cppalliance/boost_superproject_build:20.04-v2 | 2023-09 Install rclone and aws cli |
+| docker/python3/focal/Dockerfile | Python3 on Focal | cppalliance/boost_superproject_build:20.04-v3 | 2023-10 installs nodejs, npm for antora builds |
+| docker/python3/focal/Dockerfile | Python3 on Focal | cppalliance/boost_superproject_build:20.04-v4 | 2023-10 asciidoctor-diagram, asciidoctor-multipage |
