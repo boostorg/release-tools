@@ -985,9 +985,15 @@ class script(script_common):
             print("rclone is missing. Cannot proceed.")
             return
 
-        web_environments = ["PRODUCTION", "REVSYS", "STAGE", "CPPAL_DEV"]
+        # web_environments = ["PRODUCTION", "REVSYS", "STAGE", "CPPAL_DEV"]
+        web_environments = ["PRODUCTION"]
+
         for web_environment in web_environments:
-            if not (web_environment + "_AWS_ACCESS_KEY_ID") in os.environ:
+            if self.eol == "CRLF":
+                print(
+                    "EOL is CRLF rather than LF, therefore not uploading develop or master branch files to AWS S3 bucket."
+                )
+            elif not (web_environment + "_AWS_ACCESS_KEY_ID") in os.environ:
                 print(web_environment + "_AWS_ACCESS_KEY_ID not set.")
             elif not (web_environment + "_AWS_SECRET_ACCESS_KEY") in os.environ:
                 print(web_environment + "_AWS_SECRET_ACCESS_KEY not set.")
