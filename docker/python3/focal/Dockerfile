@@ -91,7 +91,8 @@ RUN . "$NVM_DIR/nvm.sh" && nvm alias default v${NODE_VERSION}
 ENV PATH="/root/.nvm/versions/node/v${NODE_VERSION}/bin/:${PATH}"
 RUN node --version
 RUN npm --version
-RUN npm install -g gulp-cli
+RUN npm install -g gulp-cli@2.3.0
+RUN npm install -g @mermaid-js/mermaid-cli@10.5.1
 
 ENV LC_ALL en_US.UTF-8
 ENV LANG en_US.UTF-8
