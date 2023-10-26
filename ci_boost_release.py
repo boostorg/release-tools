@@ -686,7 +686,7 @@ class script(script_common):
             os.chdir(os.path.join(self.build_dir))
             utils.check_call(
                 "wget",
-                "https://raw.githubusercontent.com/boostorg/release-tools/master/MakeBoostDistro.py",
+                "https://raw.githubusercontent.com/alandefreitas/release-tools/archive-vars/MakeBoostDistro.py",
                 "-O",
                 "MakeBoostDistro.py",
             )
