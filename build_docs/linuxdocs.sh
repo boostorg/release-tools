@@ -181,7 +181,7 @@ if [ "$skippackagesoption" != "yes" ]; then
         pip3 install --user https://github.com/bfgroup/jam_pygments/archive/master.zip
         pip3 install --user Jinja2==3.1.2
         pip3 install --user MarkupSafe==2.1.1
-        gem install pygments.rb --version 2.3.0
+        sudo gem install pygments.rb --version 2.3.0
         pip3 install --user Pygments==2.13.0
         sudo gem install rouge --version 4.0.0
         pip3 install --user Sphinx==5.2.1
