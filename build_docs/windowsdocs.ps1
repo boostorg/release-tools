@@ -290,6 +290,8 @@ if ( -Not ${skip-packages} ) {
         gem install css_parser --version 1.12.0                 # 1.12.0 from 2022 still supports ruby 2.5. Continue to use until ~2024.
         gem install asciidoctor --version 2.0.17
         gem install asciidoctor-pdf --version 2.3.4
+        gem install asciidoctor-diagram --version 2.2.14
+        gem install asciidoctor-multipage --version 0.0.18
         pip3 install docutils
         wget -O rapidxml.zip http://sourceforge.net/projects/rapidxml/files/latest/download
         unzip -n -d rapidxml rapidxml.zip

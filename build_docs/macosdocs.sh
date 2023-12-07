@@ -187,6 +187,8 @@ if [ "$skippackagesoption" != "yes" ]; then
         sudo gem install css_parser --version 1.12.0                 # 1.12.0 from 2022 still supports ruby 2.5. Continue to use until ~2024.
         sudo gem install asciidoctor --version 2.0.17
         sudo gem install asciidoctor-pdf --version 2.3.4
+        sudo gem install asciidoctor-diagram --version 2.2.14
+        sudo gem install asciidoctor-multipage --version 0.0.18
         pip3 install docutils --user
         # which library is using rapidxml
         # wget -O rapidxml.zip http://sourceforge.net/projects/rapidxml/files/latest/download
