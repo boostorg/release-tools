@@ -54,7 +54,7 @@ Builds library documentation.
 optional arguments:
   -h, --help            Show this help message and exit
   -t, --type TYPE       The \"type\" of build. Defaults to \"main\" which installs all standard boost prerequisites.
-                        Another option is \"cppal\" which installs the prerequisites used by boostorg/json and a few other similar libraries.
+                        Another option is \"cppalv1\" which had installed the prerequisites used by boostorg/json and a few other similar libraries.
                         More \"types\" can be added in the future if your library needs a specific set of packages installed.
                         The type is usually auto-detected and doesn't need to be specified.
   --skip-boost          Skip downloading boostorg/boost and building b2 if you are certain those steps have already been done.
@@ -145,12 +145,16 @@ fi
 
 # DECIDE THE TYPE
 
-alltypes="main cppal"
-cppaltypes="json beast url http_proto socks_proto zlib"
+# Generally, boostorg/release-tools treats all libraries the same, meaning it installs one set of packages and executes b2.
+# Therefore all libraries ought to build under 'main' and shouldn't need anything customized.
+
+all_types="main cppalv1"
+# cppalv1_types="json beast url http_proto socks_proto zlib"
+cppalv1_types="not_currently_used skipping_this"
 
 if [ -z "$typeoption" ]; then
-    if [[ " $cppaltypes " =~ .*\ $REPONAME\ .* ]]; then
-        typeoption="cppal"
+    if [[ " $cppalv1_types " =~ .*\ $REPONAME\ .* ]]; then
+        typeoption="cppalv1"
     else
         typeoption="main"
     fi
@@ -158,8 +162,8 @@ fi
 
 echo "Build type is ${typeoption}."
 
-if [[ !  " $alltypes " =~ .*\ $typeoption\ .* ]]; then
-    echo "Allowed types are currently 'main' and 'cppal'. Not $typeoption. Please choose a different option. Exiting."
+if [[ !  " $all_types " =~ .*\ $typeoption\ .* ]]; then
+    echo "Allowed types are currently 'main' and 'cppalv1'. Not $typeoption. Please choose a different option. Exiting."
     exit 1
 fi
 
@@ -402,7 +406,7 @@ if [ "$typeoption" = "main" ]; then
     echo "using quickbook : build/dist/bin/quickbook ; using auto-index : build/dist/bin/auto_index ; using docutils ; using doxygen ; using boostbook ; using asciidoctor ; using saxonhe ;" > tools/build/src/user-config.jam
     ./b2 -j3 $librarypath/doc${boostrelease}
 
-elif  [ "$typeoption" = "cppal" ]; then
+elif  [ "$typeoption" = "cppalv1" ]; then
     echo "using doxygen ; using boostbook ; using saxonhe ;" > tools/build/src/user-config.jam
     ./b2 $librarypath/doc${boostrelease} cxxstd=11
 fi

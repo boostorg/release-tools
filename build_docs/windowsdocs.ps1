@@ -29,7 +29,7 @@ Builds library documentation.
 optional arguments:
   -help                 Show this help message and exit
   -type TYPE            The `"type`" of build. Defaults to `"main`" which installs all standard boost prerequisites.
-                        Another option is `"cppal`" which installs the prerequisites used by boostorg/json and a few other similar libraries.
+                        Another option is `"cppalv1`" which had installed the prerequisites used by boostorg/json and a few other similar libraries.
                         More `"types`" can be added in the future if your library needs a specific set of packages installed.
                         The type is usually auto-detected and doesn't need to be specified.
   -skip-boost           Skip downloading boostorg/boost and building b2 if you are certain those steps have already been done.
@@ -196,12 +196,16 @@ else {
 
 # DECIDE THE TYPE
 
-$alltypes="main cppal"
-$cppaltypes="json beast url http_proto socks_proto zlib"
+# Generally, boostorg/release-tools treats all libraries the same, meaning it installs one set of packages and executes b2.
+# Therefore all libraries ought to build under 'main' and shouldn't need anything customized.
+
+$all_types="main cppalv1"
+# $cppalv1_types="json beast url http_proto socks_proto zlib"
+$cppalv1_types="not_currently_used skipping_this"
 
 if (! $typeoption ) {
-    if ($cppaltypes.contains($REPONAME)) {
-        $typeoption="cppal"
+    if ($cppalv1_types.contains($REPONAME)) {
+        $typeoption="cppalv1"
     }
     else {
         $typeoption="main"
@@ -210,8 +214,8 @@ if (! $typeoption ) {
 
 echo "Build type is $typeoption"
 
-if ( ! $alltypes.contains($typeoption)) {
-    echo "Allowed types are currently 'main' and 'cppal'. Not $typeoption. Please choose a different option. Exiting."
+if ( ! $all_types.contains($typeoption)) {
+    echo "Allowed types are currently 'main' and 'cppalv1'. Not $typeoption. Please choose a different option. Exiting."
     exit 1
 }
 
@@ -614,7 +618,7 @@ if ($typeoption -eq "main") {
          exit 1
      }
 }
-elseif ($typeoption -eq "cppal") {
+elseif ($typeoption -eq "cppalv1") {
     $content="using doxygen : `"/Program Files/doxygen/bin/doxygen.exe`" ; using boostbook ; using saxonhe ;"
     $filename="$Env:BOOST_ROOT\tools\build\src\user-config.jam"
     [IO.File]::WriteAllLines($filename, $content)
