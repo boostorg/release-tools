@@ -1,0 +1,56 @@
+---
+# Copyright 2023 Sam Darwin
+#
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE_1_0.txt or copy at http://boost.org/LICENSE_1_0.txt)
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - develop
+      - feature/*
+
+jobs:
+  linux:
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            container: ubuntu:22.04
+
+    timeout-minutes: 720
+    runs-on: ${{matrix.os}}
+    container: ${{matrix.container}}
+
+    steps:
+      - name: Git - Get Sources
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: |
+          set -xe
+          python -m pip install black
+
+      - name: Lint
+        run: |
+          set -xe
+          files="publish_release.py MakeBoostDistro.py ci_boost_release.py ci_boost_common.py"
+          for file in ${files}; do
+              black --check ${file}
+          done

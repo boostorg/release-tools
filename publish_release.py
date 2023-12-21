@@ -242,7 +242,6 @@ elif not Path(str(Path.home()) + "/.aws/credentials").is_file():
 else:
     if not options.dryrun:
         for profile, bucket in aws_profiles.items():
-
             # AWS cli method:
             # archivePathRemote="s3://" + bucket + "/archives/" + hostedArchiveName + "/"
             # os.system("aws s3 cp --recursive --region %s --profile %s %s %s" % (aws_region, profile, archivePathLocal, archivePathRemote))
