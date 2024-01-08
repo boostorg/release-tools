@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright Sam Darwin 2021
 # Distributed under the Boost Software License, Version 1.0.
@@ -30,7 +30,8 @@ from ci_boost_common import utils
 
 # Config
 
-boost_versions=[ "1.63.0", "1.64.0", "1.65.0", "1.65.1", "1.66.0", "1.67.0", "1.68.0", "1.69.0", "1.70.0", "1.71.0", "1.72.0", "1.73.0", "1.74.0", "1.75.0" ]
+boost_versions=[ "1.63.0", "1.64.0", "1.65.0", "1.65.1", "1.66.0", "1.67.0", "1.68.0", "1.69.0", "1.70.0", "1.71.0", "1.72.0", "1.73.0", "1.74.0",
+        "1.75.0", "1.76.0", "1.77.0", "1.78.0", "1.79.0", "1.80.0", "1.81.0", "1.82.0", "1.83.0", "1.84.0" ]
 
 # Or for testing:
 # boost_versions=[ "1.74.0", "1.75.0" ]
@@ -57,7 +58,10 @@ credentialhelperscript='!f() { sleep 1; echo "username=${GH_USER}"; echo "passwo
 utils.check_call('git', 'config', 'credential.helper', '%s'%(credentialhelperscript))
 
 # Create a release, if one is not present
-list_of_releases=subprocess.check_output(['gh', 'release', 'list'])
+list_of_releases=subprocess.check_output(['gh', 'release', 'list'], text=True)
+
+print("Previous releases list_of_releases:")
+print(list_of_releases)
 
 for version in boost_versions:
     github_release_name="boost-" + version
@@ -73,6 +77,10 @@ for version in boost_versions:
                         '%s'%(github_release_title),
                         '-n',
                         '%s'%(github_release_notes))
+    else:
+        print("Release %s already exists" % github_release_name)
+
+    print("Uploading all files for %s" % github_release_name)
 
     for subfolder in ["source", "binaries"]:
         file_location=github_releases_local_archives + "/release/" + version + "/" + subfolder + "/*"
