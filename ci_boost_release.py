@@ -185,10 +185,10 @@ def generatehtmlpages(source_dir, build_dir):
         for library in allmetadata:
             if category in allmetadata[library]["category"]:
                 boostlibrarycategories[category]["libraries"].append(library)
-            # sort libraries in this category by name
-            boostlibrarycategories[category]["libraries"].sort(
-                key=lambda x: allmetadata[x]["name"].lower()
-            )
+        # sort libraries in this category by name
+        boostlibrarycategories[category]["libraries"].sort(
+            key=lambda x: allmetadata[x]["name"].lower()
+        )
 
     # sort allmetadata by name
     sorted_tuples = sorted(allmetadata.items(), key=lambda x: x[1]["name"].lower())
@@ -668,111 +668,173 @@ class script(script_common):
             import MakeBoostDistro
 
             os.chdir(self.releases_dir)
-            MakeBoostDistro.main(self.root_dir, self.boost_release_name)
+            # Full: Include source / Include docs / B2 layout
+            MakeBoostDistro.main(self.root_dir, self.boost_release_name, True, True)
+            # Source: Include source / Exclude docs / B2 layout
+            MakeBoostDistro.main(
+                self.root_dir, "%s-source" % self.boost_release_name, True, False
+            )
+            # Docs: Exclude source / Include docs / B2 layout
+            MakeBoostDistro.main(
+                self.root_dir, "%s-docs" % self.boost_release_name, False, True
+            )
+            # CMake: Include source / Exclude docs / CMake layout
+            MakeBoostDistro.main(
+                self.root_dir, "%s-cmake" % self.boost_release_name, True, False, True
+            )
         else:
             os.chdir(os.path.join(self.build_dir))
             utils.check_call(
                 "wget",
-                "https://raw.githubusercontent.com/boostorg/release-tools/master/MakeBoostDistro.py",
+                "https://raw.githubusercontent.com/alandefreitas/release-tools/archive-vars/MakeBoostDistro.py",
                 "-O",
                 "MakeBoostDistro.py",
             )
             utils.check_call("chmod", "+x", "MakeBoostDistro.py")
-            os.chdir(os.path.dirname(self.root_dir))
+            os.chdir(self.releases_dir)
+            # Full: Include source / Include docs / B2 layout
             utils.check_call(
                 pythonbinary,
                 os.path.join(self.build_dir, "MakeBoostDistro.py"),
                 self.root_dir,
                 self.boost_release_name,
+                "--source",
+                "--docs",
+                "--no-cmake",
+            )
+            # Source: Include source / Exclude docs / B2 layout
+            utils.check_call(
+                pythonbinary,
+                os.path.join(self.build_dir, "MakeBoostDistro.py"),
+                self.root_dir,
+                "%s-source" % self.boost_release_name,
+                "--source",
+                "--no-docs",
+                "--no-cmake",
+            )
+            # Docs: Exclude source / Include docs / B2 layout
+            utils.check_call(
+                pythonbinary,
+                os.path.join(self.build_dir, "MakeBoostDistro.py"),
+                self.root_dir,
+                "%s-docs" % self.boost_release_name,
+                "--no-source",
+                "--docs",
+                "--no-cmake",
+            )
+            # CMake: Include source / Exclude docs / CMake layout
+            utils.check_call(
+                pythonbinary,
+                os.path.join(self.build_dir, "MakeBoostDistro.py"),
+                self.root_dir,
+                "%s-cmake" % self.boost_release_name,
+                "--source",
+                "--no-docs",
+                "--cmake",
             )
 
-        # Patch release with the html generate in-place
-        for sourcefilename in ["index.html", "libs/libraries.htm"]:
-            shutil.copyfile(
-                os.path.join(self.build_dir, sourcefilename),
-                os.path.join(
-                    self.releases_dir, self.boost_release_name, sourcefilename
-                ),
+        # Patch doc releases with the html generated in-place
+        for release_name in [
+            self.boost_release_name,
+            "%s-docs" % self.boost_release_name,
+        ]:
+            for sourcefilename in ["index.html", "libs/libraries.htm"]:
+                abs_source = os.path.join(self.build_dir, sourcefilename)
+                abs_dest = os.path.join(self.releases_dir, release_name, sourcefilename)
+                print("Copying %s to %s" % (abs_source, abs_dest))
+                shutil.copyfile(abs_source, abs_dest)
+
+        # Patch doc releases with antora docs
+        for release_name in [
+            self.boost_release_name,
+            "%s-docs" % self.boost_release_name,
+        ]:
+            antora_lib_docs = os.path.join(self.build_dir, "antora/build/lib/doc")
+            release_lib_docs = os.path.join(self.releases_dir, release_name, "libs")
+            ignored_files_pattern = shutil.ignore_patterns(
+                "[.]*",
+                "[.]gitattributes",
+                "[.]gitignore",
+                "[.]gitmodules",
+                "[.]travis[.]yml",
+                "appveyor[.]yml",
+                "circle[.]yml",
+            )
+            shutil.copytree(
+                antora_lib_docs,
+                release_lib_docs,
+                symlinks=False,
+                ignore=ignored_files_pattern,
+                dirs_exist_ok=True,
             )
 
-        # Patch release with antora docs
-        antora_lib_docs = os.path.join(self.build_dir, "antora/build/lib/doc")
-        release_lib_docs = os.path.join(
-            self.releases_dir, self.boost_release_name, "libs"
-        )
-        shutil.copytree(
-            antora_lib_docs, release_lib_docs, symlinks=False, dirs_exist_ok=True
-        )
-
+        # Create archive files for all releases
         packages = []
         archive_files = []
+        for release_name in [
+            self.boost_release_name,
+            "%s-source" % self.boost_release_name,
+            "%s-docs" % self.boost_release_name,
+            "%s-cmake" % self.boost_release_name,
+        ]:
+            # Create packages for LF style content.
+            if self.eol == "LF":
+                os.chdir(self.releases_dir)
+                os.environ["GZIP"] = "-9"
+                os.environ["BZIP2"] = "-9"
+                archive_files.append("%s%s.tar.gz" % (release_name, self.archive_tag))
+                packages.append(
+                    parallel_call(
+                        "tar",
+                        "--exclude=ci_boost_common.py",
+                        "--exclude=ci_boost_release.py",
+                        "-zcf",
+                        "%s%s.tar.gz" % (release_name, self.archive_tag),
+                        release_name,
+                    )
+                )
+                archive_files.append("%s%s.tar.bz2" % (release_name, self.archive_tag))
+                packages.append(
+                    parallel_call(
+                        "tar",
+                        "--exclude=ci_boost_common.py",
+                        "--exclude=ci_boost_release.py",
+                        "-jcf",
+                        "%s%s.tar.bz2" % (release_name, self.archive_tag),
+                        release_name,
+                    )
+                )
 
-        # Create packages for LF style content.
-        if self.eol == "LF":
-            os.chdir(self.releases_dir)
-            os.environ["GZIP"] = "-9"
-            os.environ["BZIP2"] = "-9"
-            archive_files.append(
-                "%s%s.tar.gz" % (self.boost_release_name, self.archive_tag)
-            )
-            packages.append(
-                parallel_call(
-                    "tar",
-                    "--exclude=ci_boost_common.py",
-                    "--exclude=ci_boost_release.py",
-                    "-zcf",
-                    "%s%s.tar.gz" % (self.boost_release_name, self.archive_tag),
-                    self.boost_release_name,
+            # Create packages for CRLF style content.
+            if self.eol == "CRLF":
+                os.chdir(self.releases_dir)
+                archive_files.append("%s%s.zip" % (release_name, self.archive_tag))
+                packages.append(
+                    parallel_call(
+                        "zip",
+                        "-qr",
+                        "-9",
+                        "%s%s.zip" % (release_name, self.archive_tag),
+                        release_name,
+                        "-x",
+                        release_name + "/ci_boost_common.py",
+                        release_name + "/ci_boost_release.py",
+                    )
                 )
-            )
-            archive_files.append(
-                "%s%s.tar.bz2" % (self.boost_release_name, self.archive_tag)
-            )
-            packages.append(
-                parallel_call(
-                    "tar",
-                    "--exclude=ci_boost_common.py",
-                    "--exclude=ci_boost_release.py",
-                    "-jcf",
-                    "%s%s.tar.bz2" % (self.boost_release_name, self.archive_tag),
-                    self.boost_release_name,
-                )
-            )
-
-        # Create packages for CRLF style content.
-        if self.eol == "CRLF":
-            os.chdir(self.releases_dir)
-            archive_files.append(
-                "%s%s.zip" % (self.boost_release_name, self.archive_tag)
-            )
-            packages.append(
-                parallel_call(
-                    "zip",
-                    "-qr",
-                    "-9",
-                    "%s%s.zip" % (self.boost_release_name, self.archive_tag),
-                    self.boost_release_name,
-                    "-x",
-                    self.boost_release_name + "/ci_boost_common.py",
-                    self.boost_release_name + "/ci_boost_release.py",
-                )
-            )
-            archive_files.append(
-                "%s%s.7z" % (self.boost_release_name, self.archive_tag)
-            )
-            with open("/dev/null") as dev_null:
-                utils.check_call(
-                    "7z",
-                    "a",
-                    "-bd",
-                    "-mx=7",
-                    "-ms=on",
-                    "-x!" + self.boost_release_name + "/ci_boost_common.py",
-                    "-x!" + self.boost_release_name + "/ci_boost_release.py",
-                    "%s%s.7z" % (self.boost_release_name, self.archive_tag),
-                    self.boost_release_name,
-                    stdout=dev_null,
-                )
+                archive_files.append("%s%s.7z" % (release_name, self.archive_tag))
+                with open("/dev/null") as dev_null:
+                    utils.check_call(
+                        "7z",
+                        "a",
+                        "-bd",
+                        "-mx=7",
+                        "-ms=on",
+                        "-x!" + release_name + "/ci_boost_common.py",
+                        "-x!" + release_name + "/ci_boost_release.py",
+                        "%s%s.7z" % (release_name, self.archive_tag),
+                        release_name,
+                        stdout=dev_null,
+                    )
 
         for package in packages:
             package.join()
@@ -1064,22 +1126,28 @@ region = us-east-2
         if self.mode == "check":
             return
 
-        if self.eol == "LF":
-            os.chdir(os.path.dirname(self.root_dir))
-            self.upload_archives(
-                "%s%s.tar.gz" % (self.boost_release_name, self.archive_tag),
-                "%s%s.tar.gz.json" % (self.boost_release_name, self.archive_tag),
-                "%s%s.tar.bz2" % (self.boost_release_name, self.archive_tag),
-                "%s%s.tar.bz2.json" % (self.boost_release_name, self.archive_tag),
-            )
-        if self.eol == "CRLF":
-            os.chdir(os.path.dirname(self.root_dir))
-            self.upload_archives(
-                "%s%s.zip" % (self.boost_release_name, self.archive_tag),
-                "%s%s.zip.json" % (self.boost_release_name, self.archive_tag),
-                "%s%s.7z" % (self.boost_release_name, self.archive_tag),
-                "%s%s.7z.json" % (self.boost_release_name, self.archive_tag),
-            )
+        for release_name in [
+            self.boost_release_name,
+            "%s-source" % self.boost_release_name,
+            "%s-docs" % self.boost_release_name,
+            "%s-cmake" % self.boost_release_name,
+        ]:
+            if self.eol == "LF":
+                os.chdir(self.releases_dir)
+                self.upload_archives(
+                    "%s%s.tar.gz" % (release_name, self.archive_tag),
+                    "%s%s.tar.gz.json" % (release_name, self.archive_tag),
+                    "%s%s.tar.bz2" % (release_name, self.archive_tag),
+                    "%s%s.tar.bz2.json" % (release_name, self.archive_tag),
+                )
+            if self.eol == "CRLF":
+                os.chdir(self.releases_dir)
+                self.upload_archives(
+                    "%s%s.zip" % (release_name, self.archive_tag),
+                    "%s%s.zip.json" % (release_name, self.archive_tag),
+                    "%s%s.7z" % (release_name, self.archive_tag),
+                    "%s%s.7z.json" % (release_name, self.archive_tag),
+                )
 
         self.upload_to_s3()
 
