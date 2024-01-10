@@ -700,9 +700,15 @@ class script(script_common):
         release_lib_docs = os.path.join(
             self.releases_dir, self.boost_release_name, "libs"
         )
-        shutil.copytree(
-            antora_lib_docs, release_lib_docs, symlinks=False, dirs_exist_ok=True
-        )
+        for d in os.listdir(antora_lib_docs):
+            if not os.path.isdir(os.path.join(antora_lib_docs, d)):
+                continue
+            shutil.copytree(
+                os.path.join(antora_lib_docs, d),
+                os.path.join(release_lib_docs, d),
+                symlinks=False,
+                dirs_exist_ok=True,
+            )
 
         packages = []
         archive_files = []
