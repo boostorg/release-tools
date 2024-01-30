@@ -542,10 +542,12 @@ class script(script_common):
             os.path.join(self.build_dir, "site-config.jam"),
             'using quickbook : "%s" ;'
             % (os.path.join(self.build_dir, "dist", "bin", "quickbook")),
-            'using auto-index : "%s" ;'
-            % (os.path.join(self.build_dir, "dist", "bin", "auto_index"))
-            if enable_auto_index
-            else "",
+            (
+                'using auto-index : "%s" ;'
+                % (os.path.join(self.build_dir, "dist", "bin", "auto_index"))
+                if enable_auto_index
+                else ""
+            ),
             "using docutils : %s ;" % docutils_path,
             "using doxygen ;",
             'using boostbook : "%s" : "%s" ;'
