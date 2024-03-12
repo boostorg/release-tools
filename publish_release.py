@@ -3,6 +3,11 @@
 # Downloads snapshots from artifactory, renames them, confirms the sha hash,
 # and then uploads the files back to artifactory.
 #
+# TODO:
+#
+# 2024-03-11	If permanently switching from jfrog to s3, adjust the dryrun setting
+# concerning "Upload extracted files to S3 for the website docs". That should happen or not happen
+# based on other s3 uploads. Check all dryrun configurations throughout the file.
 #
 # Instructions
 #
@@ -45,6 +50,7 @@ import pathlib
 from dotenv import load_dotenv
 
 jfrogURL = "https://boostorg.jfrog.io/artifactory/"
+s3_archives_bucket = "boost-archives"
 
 
 def fileHash(fileName):
@@ -105,8 +111,25 @@ def copyJFROGFile(sourceRepo, sourceFileName, destRepo, destFileName, suffix):
 
 def uploadJFROGFile(sourceFileName, destRepo):
     # 	Upload a file to JFROG
-    print("Uploading: %s" % (sourceFileName))
+    print("Uploading: %s to JFROG" % (sourceFileName))
     os.system("jfrog rt upload %s %s" % (sourceFileName, destRepo))
+
+
+def uploadS3File(sourceFileName, destRepo):
+    # 	Upload an archive to S3
+    print("Uploading: %s to S3" % (sourceFileName))
+    archivePathLocal = sourceFileName
+    archivePathRemote = re.sub("^main/", "", destRepo)
+    archivePathRemote = "remote1:" + s3_archives_bucket + "/" + archivePathRemote
+    result = subprocess.run(
+        "export AWS_PROFILE=%s;rclone -v --s3-no-check-bucket copy --checksum %s %s"
+        % ("production", archivePathLocal, archivePathRemote),
+        check=True,
+        shell=True,
+        text=True,
+    )
+    if options.progress:
+        print(result)
 
 
 #####
@@ -138,6 +161,14 @@ parser.add_option(
     action="store_true",
     help="download files only",
     dest="dryrun",
+)
+
+parser.add_option(
+    "--dry-run-s3",
+    default=True,
+    action="store_true",
+    help="don't upload release archives to s3",
+    dest="dryrun_s3",
 )
 
 (options, args) = parser.parse_args()
@@ -216,7 +247,7 @@ if not options.dryrun:
         copyJFROGFile(sourceRepo, snapshotName, destRepo, actualName, s)
         uploadJFROGFile(actualName + s + ".json", destRepo)
 
-# Upload the files to S3
+# Upload extracted files to S3 for the website docs
 aws_profiles = {
     "production": "boost.org.v2",
     "stage": "stage.boost.org.v2",
@@ -260,6 +291,12 @@ else:
                 "export AWS_PROFILE=%s;rclone sync --transfers 16 --checksum %s %s"
                 % (profile, archivePathLocal, archivePathRemote)
             )
+
+# Upload archives to S3
+if not options.dryrun_s3:
+    for s in suffixes:
+        uploadS3File(actualName + s, destRepo)
+        uploadS3File(actualName + s + ".json", destRepo)
 
 ###############################################################################
 #
