@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S python3 -u
 #
 # Downloads snapshots from artifactory, renames them, confirms the sha hash,
 # and then uploads the files back to artifactory.
@@ -38,6 +38,11 @@ import hashlib
 import re, os, sys
 import json
 from pathlib import Path
+import subprocess
+import pathlib
+
+# run: pip3 install python-dotenv
+from dotenv import load_dotenv
 
 jfrogURL = "https://boostorg.jfrog.io/artifactory/"
 
@@ -105,7 +110,8 @@ def uploadJFROGFile(sourceFileName, destRepo):
 
 
 #####
-parser = OptionParser()
+usage = "usage: %prog [options] boost_version     # Example: %prog 1_85_0"
+parser = OptionParser(usage=usage)
 parser.add_option(
     "-b", "--beta", default=None, type="int", help="build a beta release", dest="beta"
 )
@@ -253,4 +259,62 @@ else:
             os.system(
                 "export AWS_PROFILE=%s;rclone sync --transfers 16 --checksum %s %s"
                 % (profile, archivePathLocal, archivePathRemote)
+            )
+
+###############################################################################
+#
+# Inform CDN origins about uploaded files
+#
+###############################################################################
+
+# The CDN origins are set to update on a slow schedule, once per day.
+# To refresh them more quickly, upload a text file with information.
+#
+if not options.dryrun:
+    try:
+        load_dotenv()
+        SSH_USER = os.getenv("SSH_USER")
+    except:
+        SSH_USER = "mclow"
+
+    list_of_uploaded_files = []
+    for s in suffixes:
+        list_of_uploaded_files.append(destRepo + actualName + s)
+        list_of_uploaded_files.append(destRepo + actualName + s + ".json")
+
+    source_file_list = "/tmp/boostarchivesinfo/filelist.txt"
+    source_file_list_dir = os.path.dirname(source_file_list)
+
+    # create dir
+    Path(source_file_list_dir).mkdir(mode=0o777, parents=True, exist_ok=True)
+
+    # if source_file_list existed previously, remove it
+    if os.path.isfile(source_file_list):
+        pathlib.Path(source_file_list).unlink()
+
+    # populate source_file_list
+    with open(source_file_list, "w") as f:
+        for file in list_of_uploaded_files:
+            f.write(file)
+            f.write("\n")
+
+    for origin in ["brorigin1.cpp.al", "brorigin2.cpp.al"]:
+        try:
+            result = subprocess.run(
+                f'ssh {SSH_USER}@{origin} "mkdir -p {source_file_list_dir}; chmod 777 {source_file_list_dir}"',
+                shell=True,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            result = subprocess.run(
+                f"scp -p {source_file_list} {SSH_USER}@{origin}:{source_file_list}",
+                shell=True,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        except:
+            print(
+                "SSH to the CDN origin servers failed. Check your SSH keys, and set SSH_USER=_username_ in an .env file in the same directory as publish_release.py."
             )
