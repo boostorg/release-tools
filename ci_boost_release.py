@@ -700,18 +700,12 @@ class script(script_common):
         # Patch release with antora docs
         antora_lib_docs = os.path.join(self.build_dir, "antora/build/lib/doc")
         release_lib_docs = os.path.join(
-            self.releases_dir, self.boost_release_name, "libs"
+            self.releases_dir, self.boost_release_name, "doc", "antora"
         )
-        for d in os.listdir(antora_lib_docs):
-            if not os.path.isdir(os.path.join(antora_lib_docs, d)):
-                continue
-            shutil.copytree(
-                os.path.join(antora_lib_docs, d),
-                os.path.join(release_lib_docs, d),
-                symlinks=False,
-                dirs_exist_ok=True,
-            )
-
+        utils.makedirs(release_lib_docs)
+        shutil.copytree(
+            antora_lib_docs, release_lib_docs, symlinks=False, dirs_exist_ok=True
+        )
         packages = []
         archive_files = []
 
