@@ -31,6 +31,10 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
+            container: ubuntu:24.04
+            packages: python-is-python3
+            skiplist: auto_index
+          - os: ubuntu-latest
             container: ubuntu:22.04
             packages: python2
             skiplist: auto_index
@@ -38,6 +42,11 @@ jobs:
             container: ubuntu:20.04
             packages: python
             skiplist: auto_index
+          - os: ubuntu-latest
+            container: ubuntu:24.04
+            packages: python-is-python3
+            # skiplist:
+            flags: "--boostrelease"
           - os: ubuntu-latest
             container: ubuntu:22.04
             packages: python2
@@ -143,11 +152,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-11
-            skiplist: auto_index contract
-          - os: macos-11
-            skiplist: contract
-            flags: "--boostrelease"
+          # - os: macos-11
+          #   skiplist: auto_index contract
+          # - os: macos-11
+          #   skiplist: contract
+          #   flags: "--boostrelease"
           - os: macos-12
             skiplist: auto_index contract
           - os: macos-12

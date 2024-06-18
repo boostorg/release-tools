@@ -14,6 +14,7 @@ scriptname="linuxdocs.sh"
 # set defaults:
 boostrelease=""
 BOOSTROOTRELPATH=".."
+pythonvirtenvpath="${HOME}/venvboostdocs"
 
 # READ IN COMMAND-LINE OPTIONS
 
@@ -165,14 +166,20 @@ if [ "$skippackagesoption" != "yes" ]; then
     # already done:
     # sudo apt-get update
 
-    sudo apt-get install -y build-essential cmake curl default-jre-headless python3 rsync unzip wget
+    sudo apt-get install -y build-essential cmake curl default-jre-headless python3 python3-venv rsync unzip wget
 
     if [ "$typeoption" = "cppalv1" ]; then
         sudo apt-get install -y bison docbook docbook-xml docbook-xsl flex libfl-dev libsaxonhe-java xsltproc
     fi
     if [ "$typeoption" = "main" ]; then
         sudo apt-get install -y python3-pip ruby ruby-dev
-        sudo apt-get install -y bison docbook docbook-xml docbook-xsl docutils-doc docutils-common flex ghostscript graphviz libfl-dev libsaxonhe-java python3-docutils texlive texlive-latex-extra xsltproc
+        sudo apt-get install -y bison docbook docbook-xml docbook-xsl docutils-doc docutils-common flex ghostscript graphviz libfl-dev libsaxonhe-java texlive texlive-latex-extra xsltproc
+
+        if [ ! -f ${pythonvirtenvpath}/bin/activate ]; then
+            python3 -m venv ${pythonvirtenvpath}
+        fi
+        source ${pythonvirtenvpath}/bin/activate
+
         # the next two gems are for asciidoctor-pdf
         sudo gem install public_suffix --version 4.0.7		# 4.0.7 from 2022 still supports ruby 2.5. Continue to use until ~2024.
         sudo gem install css_parser --version 1.12.0		# 1.12.0 from 2022 still supports ruby 2.5. Continue to use until ~2024.
@@ -180,22 +187,23 @@ if [ "$skippackagesoption" != "yes" ]; then
         sudo gem install asciidoctor-pdf --version 2.3.4
         sudo gem install asciidoctor-diagram --version 2.2.14
         sudo gem install asciidoctor-multipage --version 0.0.18
-        sudo pip3 install docutils
+        pip3 install setuptools
+        pip3 install docutils
         # which library is using rapidxml
         # wget -O rapidxml.zip http://sourceforge.net/projects/rapidxml/files/latest/download
         # unzip -n -d rapidxml rapidxml.zip
-        pip3 install --user https://github.com/bfgroup/jam_pygments/archive/master.zip
-        pip3 install --user Jinja2==3.1.2
-        pip3 install --user MarkupSafe==2.1.1
+        pip3 install https://github.com/bfgroup/jam_pygments/archive/master.zip
+        pip3 install Jinja2==3.1.2
+        pip3 install MarkupSafe==2.1.1
         sudo gem install pygments.rb --version 2.3.0
-        pip3 install --user Pygments==2.13.0
+        pip3 install Pygments==2.13.0
         sudo gem install rouge --version 4.0.0
-        pip3 install --user Sphinx==5.2.1
-        pip3 install --user git+https://github.com/pfultz2/sphinx-boost@8ad7d424c6b613864976546d801439c34a27e3f6
+        pip3 install Sphinx==5.2.1
+        pip3 install git+https://github.com/pfultz2/sphinx-boost@8ad7d424c6b613864976546d801439c34a27e3f6
         # from dockerfile:
-        pip3 install --user myst-parser==0.18.1
-        pip3 install --user future==0.18.2
-        pip3 install --user six==1.14.0
+        pip3 install myst-parser==0.18.1
+        pip3 install future==0.18.2
+        pip3 install six==1.14.0
 
         # Locking the version numbers in place offers a better guarantee of a known, good build.
 	# At the same time, it creates a perpetual outstanding task, to upgrade the gem and pip versions
@@ -223,6 +231,11 @@ if [ "$skippackagesoption" != "yes" ]; then
     cd saxonhe
     sudo rm /usr/share/java/Saxon-HE.jar || true
     sudo cp saxon9he.jar /usr/share/java/Saxon-HE.jar
+fi
+
+# In the above 'packages' section a python virtenv was created. Activate it, if that has not been done already.
+if [ -f ${pythonvirtenvpath}/bin/activate ]; then
+    source ${pythonvirtenvpath}/bin/activate
 fi
 
 cd $BOOST_SRC_FOLDER

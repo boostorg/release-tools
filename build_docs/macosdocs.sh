@@ -177,8 +177,10 @@ if [ "$skippackagesoption" != "yes" ]; then
 
     brew install doxygen
     brew install wget
-    brew tap adoptopenjdk/openjdk
-    brew install --cask adoptopenjdk11
+    # deprecated in 2021
+    # brew tap adoptopenjdk/openjdk
+    # brew install --cask adoptopenjdk11
+    brew install --cask temurin
     brew install gnu-sed
     brew install docbook
     brew install docbook-xsl
@@ -193,6 +195,7 @@ if [ "$skippackagesoption" != "yes" ]; then
         sudo gem install asciidoctor-pdf --version 2.3.4
         sudo gem install asciidoctor-diagram --version 2.2.14
         sudo gem install asciidoctor-multipage --version 0.0.18
+        pip3 install setuptools --user
         pip3 install docutils --user
         # which library is using rapidxml
         # wget -O rapidxml.zip http://sourceforge.net/projects/rapidxml/files/latest/download
