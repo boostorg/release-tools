@@ -3,12 +3,6 @@
 # Downloads snapshots from artifactory, renames them, confirms the sha hash,
 # and then uploads the files back to artifactory.
 #
-# TODO:
-#
-# 2024-03-11	If permanently switching from jfrog to s3, adjust the dryrun setting
-# concerning "Upload extracted files to S3 for the website docs". That should happen or not happen
-# based on other s3 uploads. Check all dryrun configurations throughout the file.
-#
 # Instructions
 #
 # - Install jfrog cli https://jfrog.com/getcli/
@@ -154,6 +148,11 @@ parser.add_option(
     help="print progress information",
     dest="progress",
 )
+# The main 'dryrun' setting now applies to the following topics:
+# archive uploads to s3
+# files uploads to s3 for the website
+# informing the CDN servers about the uploads
+# also, if set, it will prevent JFrog uploads
 parser.add_option(
     "-n",
     "--dry-run",
@@ -162,13 +161,16 @@ parser.add_option(
     help="download files only",
     dest="dryrun",
 )
-
+# The more specific 'dryrun_jfrog' setting does not affect
+# most of the above 'dryrun' topics, and only indicates if files
+# will be uploaded to JFrog or not. Set this to default=True as soon as
+# JFrog goes offline.
 parser.add_option(
-    "--dry-run-s3",
-    default=True,
+    "--dry-run-jfrog",
+    default=False,
     action="store_true",
-    help="don't upload release archives to s3",
-    dest="dryrun_s3",
+    help="don't upload release archives to JFrog",
+    dest="dryrun_jfrog",
 )
 
 (options, args) = parser.parse_args()
@@ -199,7 +201,7 @@ if options.rc != None:
 if options.progress:
     print("Creating release files named '%s'" % actualName)
     if options.dryrun:
-        print("## Dry run; not uploading files to JFrog")
+        print("## Dry run; not uploading files to s3://boost-archives/")
 
 suffixes = [".7z", ".zip", ".tar.bz2", ".tar.gz"]
 snapshotName = "boost_%s-snapshot" % boostVersion
@@ -242,7 +244,7 @@ os.chdir(origDir)
 # Upload the files to JFROG
 if options.progress:
     print("Uploading to: %s" % destRepo)
-if not options.dryrun:
+if not options.dryrun_jfrog and not options.dryrun:
     for s in suffixes:
         copyJFROGFile(sourceRepo, snapshotName, destRepo, actualName, s)
         uploadJFROGFile(actualName + s + ".json", destRepo)
@@ -293,7 +295,7 @@ else:
             )
 
 # Upload archives to S3
-if not options.dryrun_s3:
+if not options.dryrun:
     for s in suffixes:
         uploadS3File(actualName + s, destRepo)
         uploadS3File(actualName + s + ".json", destRepo)
