@@ -928,6 +928,29 @@ class script(script_common):
             os.chdir(os.path.dirname(self.root_dir))
 
         for filename in filenames:
+
+            if "PRODUCTION_AWS_ACCESS_KEY_ID" in os.environ:
+                os.environ["AWS_ACCESS_KEY_ID"] = os.environ[
+                    "PRODUCTION_AWS_ACCESS_KEY_ID"
+                ]
+                os.environ["AWS_SECRET_ACCESS_KEY"] = os.environ[
+                    "PRODUCTION_AWS_SECRET_ACCESS_KEY"
+                ]
+                os.environ["AWS_DEFAULT_REGION"] = "us-east-2"
+                x = subprocess.run(
+                    [
+                        "aws",
+                        "s3",
+                        "cp",
+                        filename,
+                        "s3://boost-archives/" + self.branch + "/" + filename,
+                    ],
+                    stderr=sys.stderr,
+                    stdout=sys.stdout,
+                    bufsize=1,
+                    text=True,
+                )
+
             if self.sf_releases_key:
                 # uploads.append(parallel_call(
                 utils.check_call(
@@ -974,7 +997,7 @@ class script(script_common):
             if self.sf_releases_key:
                 pass
 
-    def upload_to_s3(self):
+    def website_upload_to_s3(self):
         """Upload the contents of the archive to S3 for website hosting."""
 
         os.chdir(os.path.dirname(self.root_dir))
@@ -1083,7 +1106,7 @@ region = us-east-2
                 "%s%s.7z.json" % (self.boost_release_name, self.archive_tag),
             )
 
-        self.upload_to_s3()
+        self.website_upload_to_s3()
 
 
 main(script)
