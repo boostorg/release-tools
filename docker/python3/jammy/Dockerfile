@@ -3,7 +3,8 @@ LABEL maintainer="samuel.d.darwin@gmail.com"
 
 WORKDIR /root
 
-RUN apt-get update \
+RUN set -xe \
+    && apt-get update \
     && DEBIAN_FRONTEND="noninteractive" apt-get install -y tzdata \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y locales \
     && apt-get install -y \
@@ -25,8 +26,8 @@ RUN apt-get update \
         unzip \
         wget \
         python3-pip \
+        python3-venv \
         ruby \
-        python3-docutils \
         libsaxonhe-java \
         cmake \
         bison \
@@ -40,9 +41,12 @@ RUN apt-get update \
         sudo \
         python-is-python3 \
         dos2unix \
+        jq \
     && sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
     && dpkg-reconfigure --frontend=noninteractive locales \
     && update-locale LANG=en_US.UTF-8 \
+    && python3 -m venv /opt/venvboostdocs \
+    && export PATH=/opt/venvboostdocs/bin:$PATH \
     && mkdir /tmp/aws_cli_install && cd /tmp/aws_cli_install && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip awscliv2.zip && ./aws/install && cd /root && rm -rf /tmp/aws_cli_install \
     && mkdir /tmp/rclone_install && cd /tmp/rclone_install && wget https://downloads.rclone.org/v1.63.1/rclone-v1.63.1-linux-amd64.deb && dpkg -i rclone-v1.63.1-linux-amd64.deb && cd /root && rm -rf /tmp/rclone_install \
     && curl -s -S --retry 10 -L -o gh_2.40.1_linux_amd64.deb https://github.com/cli/cli/releases/download/v2.40.1/gh_2.40.1_linux_amd64.deb \
@@ -63,11 +67,13 @@ RUN apt-get update \
     && mkdir build && cd build \
     && curl -s -S --retry 10 -L -o rapidxml.zip http://sourceforge.net/projects/rapidxml/files/latest/download \
     && unzip -n -d rapidxml rapidxml.zip \
-    && pip3 install --user Jinja2==3.1.2 \
-    && pip3 install --user MarkupSafe==2.1.1 \
-    && pip3 install --user Sphinx==5.2.1 \
-    && pip3 install --user git+https://github.com/pfultz2/sphinx-boost@8ad7d424c6b613864976546d801439c34a27e3f6 \
-    && pip3 install --user myst-parser==0.18.1 \
+    && pip3 install setuptools \
+    && pip3 install docutils==0.19 \
+    && pip3 install Jinja2==3.1.2 \
+    && pip3 install MarkupSafe==2.1.1 \
+    && pip3 install Sphinx==5.2.1 \
+    && pip3 install git+https://github.com/pfultz2/sphinx-boost@8ad7d424c6b613864976546d801439c34a27e3f6 \
+    && pip3 install myst-parser==0.18.1 \
     && curl -s -S --retry 10 -L -o docbook-xml.zip http://www.docbook.org/xml/4.5/docbook-xml-4.5.zip \
     && unzip -n -d docbook-xml docbook-xml.zip \
     && curl -s -S --retry 10 -L -o docbook-xsl.zip https://sourceforge.net/projects/docbook/files/docbook-xsl/1.79.1/docbook-xsl-1.79.1.zip/download \
@@ -77,13 +83,15 @@ RUN apt-get update \
     && gem install asciidoctor-multipage --version 0.0.18 \
     && gem install rouge --version 4.0.0 \
     && gem install pygments.rb --version 2.3.0 \
-    && pip3 install --user Pygments==2.13.0 \
-    && pip3 install --user https://github.com/bfgroup/jam_pygments/archive/master.zip \
-    && pip3 install --user future==0.18.2 \
-    && pip3 install --user six==1.14.0 \
+    && pip3 install Pygments==2.13.0 \
+    && pip3 install https://github.com/bfgroup/jam_pygments/archive/master.zip \
+    && pip3 install future==0.18.2 \
+    && pip3 install six==1.14.0 \
+    && chmod -R 777 /opt/venvboostdocs \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean -y
 
+ENV PATH /opt/venvboostdocs/bin:$PATH
 ENV NODE_VERSION=18.18.1
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
 ENV NVM_DIR=/root/.nvm
