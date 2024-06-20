@@ -13,8 +13,8 @@ On each of the brorigin servers /var/spool/cron/crontabs/root
 
 ```
 # m h  dom mon dow   command
-0 3 * * * /root/scripts/s3-all.sh
-0,15,30,45 0-2,4-23 * * * /root/scripts/s3-snapshots.sh
+0 3 * * * /root/scripts/s3-all.sh > /tmp/s3-all-output.txt 2>&1
+0,15,30,45 0-2,4-23 * * * /root/scripts/s3-snapshots.sh > /tmp/s3-snapshots-output.txt 2>&1
 * * * * * ${HOME}/scripts/s3-file-sync.py > /tmp/s3-file-sync-output.txt 2>&1
 ```
 
