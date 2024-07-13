@@ -45,6 +45,10 @@ from dotenv import load_dotenv
 
 jfrogURL = "https://boostorg.jfrog.io/artifactory/"
 s3_archives_bucket = "boost-archives"
+aws_profile = "production"
+
+# a default, used later, when "publishing" windows staging/ files
+stagingPath2 = ""
 
 
 def fileHash(fileName):
@@ -117,7 +121,30 @@ def uploadS3File(sourceFileName, destRepo):
     archivePathRemote = "remote1:" + s3_archives_bucket + "/" + archivePathRemote
     result = subprocess.run(
         "export AWS_PROFILE=%s;rclone -v --s3-no-check-bucket copy --checksum %s %s"
-        % ("production", archivePathLocal, archivePathRemote),
+        % (aws_profile, archivePathLocal, archivePathRemote),
+        check=True,
+        shell=True,
+        text=True,
+    )
+    if options.progress:
+        print(result)
+
+
+def copyStagingS3():
+    global stagingPath2
+    if options.beta == None:
+        stagingPath1 = "staging/%s/binaries/" % (dottedVersion)
+        stagingPath2 = "release/%s/binaries/" % (dottedVersion)
+    else:
+        stagingPath1 = "staging/%s.beta%d/binaries/" % (dottedVersion, options.beta)
+        stagingPath2 = "beta/%s.beta%d/binaries/" % (dottedVersion, options.beta)
+
+    print("Staging copy: %s to %s" % (stagingPath1, stagingPath2))
+    archivePath1 = "remote1:" + s3_archives_bucket + "/" + stagingPath1
+    archivePath2 = "remote1:" + s3_archives_bucket + "/" + stagingPath2
+    result = subprocess.run(
+        "export AWS_PROFILE=%s;rclone -v --s3-no-check-bucket copy --checksum %s %s"
+        % (aws_profile, archivePath1, archivePath2),
         check=True,
         shell=True,
         text=True,
@@ -171,6 +198,25 @@ parser.add_option(
     action="store_true",
     help="don't upload release archives to JFrog",
     dest="dryrun_jfrog",
+)
+
+# Usually staging/ will be published.
+# This setting overrides a main 'dryrun'.
+parser.add_option(
+    "--force-staging",
+    default=False,
+    action="store_true",
+    help="publish staging/ files",
+    dest="force_staging",
+)
+
+# Dryrun setting specific to staging/
+parser.add_option(
+    "--dry-run-staging",
+    default=False,
+    action="store_true",
+    help="do not publish staging/ files",
+    dest="dryrun_staging",
 )
 
 (options, args) = parser.parse_args()
@@ -300,6 +346,10 @@ if not options.dryrun:
         uploadS3File(actualName + s, destRepo)
         uploadS3File(actualName + s + ".json", destRepo)
 
+# Publish Windows .exe files from their location in staging/
+if options.force_staging or (not options.dryrun and not options.dryrun_staging):
+    copyStagingS3()
+
 ###############################################################################
 #
 # Inform CDN origins about uploaded files
@@ -309,6 +359,7 @@ if not options.dryrun:
 # The CDN origins are set to update on a slow schedule, once per day.
 # To refresh them more quickly, upload a text file with information.
 #
+
 if not options.dryrun:
     try:
         load_dotenv()
@@ -320,6 +371,9 @@ if not options.dryrun:
     for s in suffixes:
         list_of_uploaded_files.append(destRepo + actualName + s)
         list_of_uploaded_files.append(destRepo + actualName + s + ".json")
+
+    if stagingPath2:
+        list_of_uploaded_files.append(stagingPath2)
 
     source_file_list = "/tmp/boostarchivesinfo/filelist.txt"
     source_file_list_dir = os.path.dirname(source_file_list)
