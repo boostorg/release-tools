@@ -44,6 +44,7 @@ import pathlib
 from dotenv import load_dotenv
 
 jfrogURL = "https://boostorg.jfrog.io/artifactory/"
+fastlyURL = "https://archives.boost.io/"
 s3_archives_bucket = "boost-archives"
 aws_profile = "production"
 
@@ -96,6 +97,20 @@ def downloadJFROGFiles(sourceRepo, sourceFileName, destFileName, suffix):
     print("Downloading: %s to %s" % (jsonFile, jsonFile))
     downloadAFile(jfrogURL + sourceRepo + sourceFile, destFile)
     downloadAFile(jfrogURL + sourceRepo + jsonFile, jsonFile)
+
+
+def downloadFASTLYFiles(sourceFileName, destFileName, suffix):
+    #   Download two files here:
+    #           boost_X_YY_ZZ-snapshot.Q      -> boost_X_YY_ZZ.Q
+    #           boost_X_YY_ZZ-snapshot.Q.json -> boost_X_YY_ZZ-snapshot.Q.json
+
+    sourceFile = "%s%s" % (sourceFileName, suffix)
+    destFile = "%s%s" % (destFileName, suffix)
+    jsonFile = "%s.json" % sourceFile
+    print("Downloading: %s to %s" % (sourceFile, destFile))
+    print("Downloading: %s to %s" % (jsonFile, jsonFile))
+    downloadAFile(fastlyURL + "master/" + sourceFile, destFile)
+    downloadAFile(fastlyURL + "master/" + jsonFile, jsonFile)
 
 
 def copyJFROGFile(sourceRepo, sourceFileName, destRepo, destFileName, suffix):
@@ -256,7 +271,8 @@ snapshotName = "boost_%s-snapshot" % boostVersion
 if options.progress:
     print("Downloading from: %s" % sourceRepo)
 for s in suffixes:
-    downloadJFROGFiles(sourceRepo, snapshotName, actualName, s)
+    # downloadJFROGFiles(sourceRepo, snapshotName, actualName, s)
+    downloadFASTLYFiles(snapshotName, actualName, s)
 
 # Create the JSON files
 for s in suffixes:
