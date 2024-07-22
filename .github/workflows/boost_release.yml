@@ -1,0 +1,76 @@
+---
+# Copyright 2022 Sam Darwin
+#
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE_1_0.txt or copy at http://boost.org/LICENSE_1_0.txt)
+
+name: boost_release
+
+on:
+  pull_request:
+    paths:
+      - ci_boost_common.py
+      - ci_boost_release.py
+      - '.github/workflows/boost_release.yml'
+  push:
+    paths:
+      - ci_boost_common.py
+      - ci_boost_release.py
+      - '.github/workflows/boost_release.yml'
+    branches:
+      - master
+      - develop
+      - feature/**
+
+jobs:
+  linux:
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            container: cppalliance/boost_superproject_build:24.04-v1
+            packages: htop
+          - os: ubuntu-latest
+            container: cppalliance/boost_superproject_build:22.04-v1
+            packages: htop
+
+    timeout-minutes: 720
+    runs-on: ${{matrix.os}}
+    container: ${{matrix.container}}
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: boost_release
+        run: |
+            set -xe
+            whoami
+            env
+            pwd
+
+            mkdir -p /root
+            cp ci_boost_common.py /root/
+            cp ci_boost_release.py /root/
+            cd /root/
+
+            boostbranch=develop
+            if [ ! -d project ]; then
+                git clone https://github.com/boostorg/boost project
+                cd project
+                # "git checkout" can also checkout commits
+                git checkout $boostbranch
+                cd ..
+            fi
+
+            export CIRCLECI=true
+            export CIRCLE_BRANCH=develop
+            export CIRCLE_WORKING_DIRECTORY=$(pwd)/project
+
+            python3 ci_boost_release.py checkout_post
+            EOL=LF python3 ci_boost_release.py test_override
