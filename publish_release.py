@@ -377,11 +377,8 @@ if options.force_staging or (not options.dryrun and not options.dryrun_staging):
 #
 
 if not options.dryrun:
-    try:
-        load_dotenv()
-        SSH_USER = os.getenv("SSH_USER")
-    except:
-        SSH_USER = "mclow"
+    load_dotenv()
+    SSH_USER = os.getenv("SSH_USER", "mclow")
 
     list_of_uploaded_files = []
     for s in suffixes:
