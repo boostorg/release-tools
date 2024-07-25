@@ -48,8 +48,9 @@ fastlyURL = "https://archives.boost.io/"
 s3_archives_bucket = "boost-archives"
 aws_profile = "production"
 
-# a default, used later, when "publishing" windows staging/ files
+# defaults, used later
 stagingPath2 = ""
+checksum_succeeded = True
 
 
 def fileHash(fileName):
@@ -62,6 +63,7 @@ def fileHash(fileName):
 
 
 def genJSON(snapshotJSON, fileName, incomingSHA):
+    global checksum_succeeded
     with open(snapshotJSON, "r") as f:
         snap = json.load(f)
     newJSON = {}
@@ -74,6 +76,7 @@ def genJSON(snapshotJSON, fileName, incomingSHA):
         print("ERROR: Checksum failure for '%s'" % fileName)
         print("Recorded:	%s" % snap["sha256"])
         print("Calculated: %s" % incomingSHA)
+        checksum_succeeded = False
 
     return newJSON
 
@@ -168,6 +171,28 @@ def copyStagingS3():
         print(result)
 
 
+def preflight():
+    load_dotenv()
+    SSH_USER = os.getenv("SSH_USER", "mclow")
+    for origin in ["brorigin1.cpp.al", "brorigin2.cpp.al"]:
+        result = subprocess.run(
+            f'ssh {SSH_USER}@{origin} "echo test > test10.txt"',
+            shell=True,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            print("SSH FAILED")
+            print(
+                "Preflight verification of SSH to the CDN origin servers failed. Check your SSH keys, and set SSH_USER=_username_ in an .env file in the same directory as publish_release.py. The best way to debug is manually SSHing to brorigin1.cpp.al and brorigin2.cpp.al"
+            )
+            print(result)
+            answer = input("Do you want to continue anyway: [y/n]")
+            if not answer or answer[0].lower() != "y":
+                print("Exiting.")
+                exit(1)
+
+
 #####
 usage = "usage: %prog [options] boost_version     # Example: %prog 1_85_0"
 parser = OptionParser(usage=usage)
@@ -240,6 +265,8 @@ if len(args) != 1:
     parser.print_help()
     exit(1)
 
+preflight()
+
 boostVersion = args[0]
 dottedVersion = boostVersion.replace("_", ".")
 sourceRepo = "main/master/"
@@ -285,23 +312,27 @@ for s in suffixes:
     with open(jsonFileName, "w", encoding="utf-8") as f:
         json.dump(jsonData, f, ensure_ascii=False, indent=0)
 
+if not checksum_succeeded:
+    exit(1)
+
 # Unzip an archive locally in ~/archives/tmp/ and move it to ~/archives/
-archiveDir = str(Path.home()) + "/archives"
-archiveDirTmp = str(Path.home()) + "/archives/tmp"
-archiveName = actualName + ".tar.gz"
-Path(archiveDir).mkdir(parents=True, exist_ok=True)
-if os.path.isdir(archiveDirTmp):
-    shutil.rmtree(archiveDirTmp)
-Path(archiveDirTmp).mkdir(parents=True, exist_ok=True)
-shutil.copyfile(archiveName, archiveDirTmp + "/" + archiveName)
-origDir = os.getcwd()
-os.chdir(archiveDirTmp)
-os.system("tar -xvf %s" % (archiveName))
-os.chdir(archiveDir)
-if os.path.isdir(hostedArchiveName):
-    shutil.rmtree(hostedArchiveName)
-shutil.move(archiveDirTmp + "/" + unzippedArchiveName, hostedArchiveName)
-os.chdir(origDir)
+if not options.dryrun:
+    archiveDir = str(Path.home()) + "/archives"
+    archiveDirTmp = str(Path.home()) + "/archives/tmp"
+    archiveName = actualName + ".tar.gz"
+    Path(archiveDir).mkdir(parents=True, exist_ok=True)
+    if os.path.isdir(archiveDirTmp):
+        shutil.rmtree(archiveDirTmp)
+    Path(archiveDirTmp).mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(archiveName, archiveDirTmp + "/" + archiveName)
+    origDir = os.getcwd()
+    os.chdir(archiveDirTmp)
+    os.system("tar -xvf %s" % (archiveName))
+    os.chdir(archiveDir)
+    if os.path.isdir(hostedArchiveName):
+        shutil.rmtree(hostedArchiveName)
+    shutil.move(archiveDirTmp + "/" + unzippedArchiveName, hostedArchiveName)
+    os.chdir(origDir)
 
 # Upload the files to JFROG
 if options.progress:
@@ -405,22 +436,22 @@ if not options.dryrun:
             f.write("\n")
 
     for origin in ["brorigin1.cpp.al", "brorigin2.cpp.al"]:
-        try:
-            result = subprocess.run(
-                f'ssh {SSH_USER}@{origin} "mkdir -p {source_file_list_dir}; chmod 777 {source_file_list_dir}"',
-                shell=True,
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            result = subprocess.run(
-                f"scp -p {source_file_list} {SSH_USER}@{origin}:{source_file_list}",
-                shell=True,
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-        except:
-            print(
-                "SSH to the CDN origin servers failed. Check your SSH keys, and set SSH_USER=_username_ in an .env file in the same directory as publish_release.py."
-            )
+        result = subprocess.run(
+            f'ssh {SSH_USER}@{origin} "mkdir -p {source_file_list_dir}; chmod 777 {source_file_list_dir}"',
+            shell=True,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            print("SSH FAILED")
+            print(result)
+
+        result = subprocess.run(
+            f"scp -p {source_file_list} {SSH_USER}@{origin}:{source_file_list}",
+            shell=True,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            print("SSH FAILED")
+            print(result)
