@@ -437,7 +437,7 @@ if not options.dryrun:
 
     for origin in ["brorigin1.cpp.al", "brorigin2.cpp.al"]:
         result = subprocess.run(
-            f'ssh {SSH_USER}@{origin} "mkdir -p {source_file_list_dir}; chmod 777 {source_file_list_dir}"',
+            f'ssh {SSH_USER}@{origin} "mkdir -p {source_file_list_dir}; chmod 777 {source_file_list_dir} || true"',
             shell=True,
             capture_output=True,
             text=True,
