@@ -184,6 +184,20 @@ echo '==================================> INSTALL'
 
 if [ "$skippackagesoption" != "yes" ]; then
 
+    brew install ruby
+    sudo ln -s /opt/homebrew/opt/ruby/bin/ruby /usr/local/bin/ruby || true
+    sudo ln -s /opt/homebrew/opt/ruby/bin/gem /usr/local/bin/gem || true
+    gem_bin_path=`gem environment gemdir`/bin
+    export PATH=${gem_bin_path}:$PATH
+
+    if grep $gem_bin_path ~/.zprofile; then
+        echo ".zprofile already has gem path set"
+        true
+    else
+        echo "Modifying .zprofile to include gems in PATH"
+        echo "export PATH=$gem_bin_path:\$PATH" >> ~/.zprofile
+    fi
+
     brew install doxygen
     brew install wget
     # deprecated in 2021
@@ -436,7 +450,7 @@ fi
 
 if [ "${BOOSTROOTLIBRARY}" = "yes" ]; then
     echo ""
-    echo "Build completed. Check the doc/ directory."
+    echo "Build completed. View the results in $librarypath/doc/html"
     echo ""
 else
     if  [ "$BOOSTROOTRELPATH" = "." ]; then
@@ -445,6 +459,6 @@ else
         pathfiller="/${BOOSTROOTRELPATH}/"
     fi
     echo ""
-    echo "Build completed. Check the results in ${BOOST_SRC_FOLDER}${pathfiller}boost-root/$librarypath/doc"
+    echo "Build completed. View the results in ${BOOST_SRC_FOLDER}${pathfiller}boost-root/$librarypath/doc/html"
     echo ""
 fi

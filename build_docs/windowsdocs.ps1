@@ -644,7 +644,7 @@ elseif ($typeoption -eq "cppalv1") {
 
 if ($BOOSTROOTLIBRARY -eq "yes") {
     echo ""
-    echo "Build completed. Check the doc/ directory."
+    echo "Build completed. View the results in $librarypath/doc/html"
     echo ""
 }
 else {
@@ -655,7 +655,7 @@ else {
         $pathfiller="/${BOOSTROOTRELPATH}/"
     }
     echo ""
-    echo "Build completed. Check the results in ${BOOST_SRC_FOLDER}${pathfiller}boost-root/$librarypath/doc"
+    echo "Build completed. View the results in ${BOOST_SRC_FOLDER}${pathfiller}boost-root/$librarypath/doc/html"
     echo ""
 }
 
