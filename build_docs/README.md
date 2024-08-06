@@ -18,6 +18,8 @@ Either of the above choices are possible. The build scripts detect if they are b
 
 That said, it is preferable to start outside of boost-root when testing modifications to core boost libraries in order to avoid complications with boostdep.
 
+In either case, always start by checking out code from git. Begin the process with a `git clone` command. (Not by downloading a complete boost archive, which may already have compiled documentation included).     
+
 In order to build the documentation, refer to the appropriate sections below.
 
 One of the main actions of these scripts is to install _packages_. Depending on the operating system this may be using apt, brew, choco, pip, or a different package manager. Usually this is perfectly fine. However, If you are concerned about package conflicts on your local machine, run the installation in a docker container or a separate cloud server to isolate the build process. The script will not install a C++ compiler, since there are many choices in that realm, so make sure a compiler is available.
