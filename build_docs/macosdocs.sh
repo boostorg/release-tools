@@ -295,8 +295,9 @@ if [ "$skipboostoption" = "yes" ] ; then
             export BOOST_ROOT=$(pwd)
             librarypath=$(getlibrarypath $REPONAME)
             mkdir -p $librarypath
-            cp -r ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath}
-            # rsync -av $BOOST_SRC_FOLDER/ $librarypath
+            # running cp multiple times will fail to overwrite certain .git files
+            # cp -r ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath} || true
+            rsync -av --exclude 'boost-root' $BOOST_SRC_FOLDER/ $librarypath
         fi
     fi
 else
@@ -320,8 +321,9 @@ else
         export BOOST_ROOT=$(pwd)
         librarypath=$(getlibrarypath $REPONAME)
         mkdir -p $librarypath
-        cp -r ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath}
-        # rsync -av $BOOST_SRC_FOLDER/ $librarypath
+        # running cp multiple times will fail to overwrite certain .git files
+        # cp -r ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath} || true
+        rsync -av --exclude 'boost-root' $BOOST_SRC_FOLDER/ $librarypath
     fi
 fi
 
@@ -366,8 +368,8 @@ if [ "$skipboostoption" != "yes" ] ; then
 
         # recopy the library if it was overwritten.
         if [ ! "${BOOSTROOTLIBRARY}" = "yes" ]; then
-            cp -rf ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath}
-            # rsync -av --delete $BOOST_SRC_FOLDER/ $librarypath
+            # cp -rf ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath}
+            rsync -av --exclude 'boost-root' --delete $BOOST_SRC_FOLDER/ $librarypath
         fi
     fi
 
