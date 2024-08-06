@@ -16,6 +16,7 @@ param (
 )
 
 $scriptname="windowsdocs.ps1"
+$pythonvirtenvpath="${HOME}\venvboostdocs"
 
 # Set-PSDebug -Trace 1
 
@@ -287,6 +288,12 @@ if ( -Not ${skip-packages} ) {
 
     if ($typeoption -eq "main") {
         $ghostversion="9.56.1"
+
+        if (!(Test-Path "${pythonvirtenvpath}\Scripts\activate")) {
+            python -m venv ${pythonvirtenvpath}
+        }
+        "${pythonvirtenvpath}\Scripts\activate"
+
         choco install -y --no-progress ghostscript --version $ghostversion
         choco install -y --no-progress texlive
         choco install -y --no-progress graphviz
@@ -325,9 +332,9 @@ if ( -Not ${skip-packages} ) {
 
         $file1="C:\Program Files\gs\gs9.56.1\bin\gswin32c.exe"
         $file2="C:\Program Files\gs\gs9.56.1\bin\gswin64c.exe"
-	if (-not(Test-Path -Path $file1 -PathType Leaf)) {
+        if (-not(Test-Path -Path $file1 -PathType Leaf)) {
             New-Item -ItemType SymbolicLink -Path $file1 -Target $file2
-	}
+        }
 
         # Locking the version numbers in place offers a better guarantee of a known, good build.
         # At the same time, it creates a perpetual outstanding task, to upgrade the gem and pip versions
@@ -381,6 +388,12 @@ if ( -Not ${skip-packages} ) {
         cp Saxon-HE.jar "C:\usr\share\java\"
     }
 
+}
+
+# In the above 'packages' section a python virtenv was created. Activate it, if that has not been done already.
+
+if ( Test-Path "${pythonvirtenvpath}\Scripts\activate" ) {
+    "${pythonvirtenvpath}\Scripts\activate"
 }
 
 # re-adding the path fix from above, even if skip-packages was set.
@@ -647,4 +660,3 @@ else {
 }
 
 popd
-
