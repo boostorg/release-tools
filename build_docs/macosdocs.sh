@@ -11,9 +11,18 @@ shopt -s dotglob
 
 scriptname="macosdocs.sh"
 
+if [[ "$(uname -p)" =~ "arm" ]]; then
+    echo "Running on arm processor"
+    homebrew_base_path="/opt/homebrew"
+else
+    echo "Not running on arm processor"
+    homebrew_base_path="/usr/local"
+fi
+
 # set defaults:
 boostrelease=""
 BOOSTROOTRELPATH=".."
+pythonvirtenvpath="${HOME}/venvboostdocs"
 
 # git and getopt are required. If they are not installed, moving that part of the installation process
 # to an earlier part of the script:
@@ -30,16 +39,16 @@ then
 fi
 
 # check apple silicon.
-if ! command -v /usr/local/opt/gnu-getopt/bin/getopt &> /dev/null
+if ! command -v ${homebrew_base_path}/opt/gnu-getopt/bin/getopt &> /dev/null
 then
     echo "Installing gnu-getopt"
     brew install gnu-getopt
 fi
-export PATH="/usr/local/opt/gnu-getopt/bin:$PATH"
+export PATH="${homebrew_base_path}/opt/gnu-getopt/bin:$PATH"
 
 # READ IN COMMAND-LINE OPTIONS
 
-TEMP=`/usr/local/opt/gnu-getopt/bin/getopt -o t:,h::,q:: --long type:,help::,skip-boost::,skip-packages::,quick::,boostrelease::,boostrootsubdir:: -- "$@"`
+TEMP=`${homebrew_base_path}/opt/gnu-getopt/bin/getopt -o t:,h::,q:: --long type:,help::,skip-boost::,skip-packages::,quick::,boostrelease::,boostrootsubdir:: -- "$@"`
 eval set -- "$TEMP"
 
 # extract options and their arguments into variables.
@@ -186,6 +195,12 @@ if [ "$skippackagesoption" != "yes" ]; then
     brew install docbook-xsl
 
     if [ "$typeoption" = "main" ]; then
+
+        if [ ! -f ${pythonvirtenvpath}/bin/activate ]; then
+           python3 -m venv ${pythonvirtenvpath}
+        fi
+        source ${pythonvirtenvpath}/bin/activate
+
 	brew install ghostscript
 	brew install texlive
         brew install graphviz
@@ -195,23 +210,23 @@ if [ "$skippackagesoption" != "yes" ]; then
         sudo gem install asciidoctor-pdf --version 2.3.4
         sudo gem install asciidoctor-diagram --version 2.2.14
         sudo gem install asciidoctor-multipage --version 0.0.18
-        pip3 install setuptools --user
-        pip3 install docutils --user
+        pip3 install setuptools
+        pip3 install docutils
         # which library is using rapidxml
         # wget -O rapidxml.zip http://sourceforge.net/projects/rapidxml/files/latest/download
         # unzip -n -d rapidxml rapidxml.zip
-        pip3 install --user https://github.com/bfgroup/jam_pygments/archive/master.zip
-        pip3 install --user Jinja2==3.1.2
-        pip3 install --user MarkupSafe==2.1.1
+        pip3 install https://github.com/bfgroup/jam_pygments/archive/master.zip
+        pip3 install Jinja2==3.1.2
+        pip3 install MarkupSafe==2.1.1
         sudo gem install pygments.rb --version 2.3.0
-        pip3 install --user Pygments==2.13.0
+        pip3 install Pygments==2.13.0
         sudo gem install rouge --version 4.0.0
-        pip3 install --user Sphinx==5.2.1
-        pip3 install --user git+https://github.com/pfultz2/sphinx-boost@8ad7d424c6b613864976546d801439c34a27e3f6
+        pip3 install Sphinx==5.2.1
+        pip3 install git+https://github.com/pfultz2/sphinx-boost@8ad7d424c6b613864976546d801439c34a27e3f6
         # from dockerfile:
-        pip3 install --user myst-parser==0.18.1
-        pip3 install --user future==0.18.2
-        pip3 install --user six==1.14.0
+        pip3 install myst-parser==0.18.1
+        pip3 install future==0.18.2
+        pip3 install six==1.14.0
 
         # Locking the version numbers in place offers a better guarantee of a known, good build.
         # At the same time, it creates a perpetual outstanding task, to upgrade the gem and pip versions
@@ -234,8 +249,13 @@ if [ "$skippackagesoption" != "yes" ]; then
 
 fi
 
+# In the above 'packages' section a python virtenv was created. Activate it, if that has not been done already.
+if [ -f ${pythonvirtenvpath}/bin/activate ]; then
+    source ${pythonvirtenvpath}/bin/activate
+fi
+
 # check this on apple silicon:
-export PATH="/usr/local/opt/gnu-sed/libexec/gnubin:$PATH"
+export PATH="${homebrew_base_path}/opt/gnu-sed/libexec/gnubin:$PATH"
 
 cd $BOOST_SRC_FOLDER
 
