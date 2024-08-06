@@ -162,6 +162,11 @@ jobs:
           - os: macos-12
             skiplist: contract
             flags: "--boostrelease"
+          - os: macos-14
+            skiplist: auto_index contract
+          - os: macos-14
+            skiplist: contract
+            flags: "--boostrelease"
 
     timeout-minutes: 720
     runs-on: ${{matrix.os}}

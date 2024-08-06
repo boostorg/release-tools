@@ -64,6 +64,7 @@ cd _path_to_boost_library_
 windowsdocs.ps1
 ```
 
+windowsdocs.ps1 requires a version of Visual Studio C++ to be available. Optionally, see the scripts here in the [other/](other/) directory such as `windows-2022-clang.ps1` for a method to install that.  
 &nbsp;  
 &nbsp;  
 Further discussion about a small number of issues affecting certain libraries is continued in [compatibility.md](compatibility.md)
