@@ -8,7 +8,7 @@ https://github.com/boostorg/boost/blob/develop/.circleci/config.yml
 https://github.com/boostorg/boost/blob/master/.circleci/config.yml  
 
 ```
-docker run -it cppalliance/boost_superproject_build:20.04-v2 bash
+docker run -it cppalliance/boost_superproject_build:24.04-v1 bash
 ```
 
 Inside the container  
