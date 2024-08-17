@@ -527,7 +527,7 @@ class script(script_common):
             "--build-dir=%s" % (self.build_dir),
             "--distdir=%s" % (os.path.join(self.build_dir, "dist")),
             "tools/quickbook",
-            "tools/auto_index/build" if enable_auto_index else "",
+            "tools/auto_index//dist" if enable_auto_index else "",
         )
 
         # Clean up build byproducts.
