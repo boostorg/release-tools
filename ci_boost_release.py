@@ -768,6 +768,7 @@ class script(script_common):
                     "a",
                     "-bd",
                     "-mx=7",
+                    "-mmt2",
                     "-ms=on",
                     "-x!" + self.boost_release_name + "/ci_boost_common.py",
                     "-x!" + self.boost_release_name + "/ci_boost_release.py",
