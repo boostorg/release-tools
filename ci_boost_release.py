@@ -618,7 +618,7 @@ class script(script_common):
                     self.branch = current_branch
                     break
 
-        ## Determine the branch of site-docs to use
+        ## Determine the branch of website-v2-docs to use
         if self.branch == "master":
             checkout_branch = "master"
         else:
@@ -633,7 +633,7 @@ class script(script_common):
                 "clone",
                 "--depth=1",
                 "--branch=%s" % checkout_branch,
-                "https://github.com/cppalliance/site-docs.git",
+                "https://github.com/boostorg/website-v2-docs.git",
                 "antora",
             )
         os.chdir(antora_dir)
