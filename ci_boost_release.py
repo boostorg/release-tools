@@ -608,11 +608,13 @@ class script(script_common):
         os.chdir(self.root_dir)
         if self.branch is None:
             self.branch = "develop"
-            output = subprocess.check_output(["git", "branch"]).decode("utf-8")
+            output = subprocess.check_output(
+                ["git", "branch", "--show-current"]
+            ).decode("utf-8")
             lines = output.split("\n")
             for line in lines:
-                if line.startswith("*"):
-                    current_branch = line[2:]
+                if len(line) > 0:
+                    current_branch = line
                     self.branch = current_branch
                     break
 
