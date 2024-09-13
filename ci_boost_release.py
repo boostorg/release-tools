@@ -624,6 +624,11 @@ class script(script_common):
         else:
             checkout_branch = "develop"
 
+        # Set the environment variable BOOST_SRC_DIR to the root directory
+        # so that the following scripts can find the boost source code
+        # instead of downloading it again.
+        os.environ["BOOST_SRC_DIR"] = self.root_dir
+
         # Call antora project main script
         os.chdir(self.build_dir)
         antora_dir = os.path.join(self.build_dir, "antora")
