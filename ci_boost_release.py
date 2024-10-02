@@ -1019,7 +1019,7 @@ class script(script_common):
             return
 
         # web_environments = ["PRODUCTION", "REVSYS", "STAGE", "CPPAL_DEV"]
-        web_environments = ["PRODUCTION"]
+        web_environments = ["PRODUCTION", "STAGE"]
 
         for web_environment in web_environments:
             if self.eol == "CRLF":
