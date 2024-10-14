@@ -359,6 +359,7 @@ if [ "$skipboostoption" != "yes" ] ; then
     git submodule update --init tools/boostdep
     git submodule update --init tools/docca
     git submodule update --init tools/quickbook
+    git submodule update --init tools/boostlook
     git submodule update --init tools/build
     sed -i 's~GLOB "/usr/share/java/saxon/"~GLOB "/Library/Java/Extensions/" "/usr/share/java/saxon/"~' tools/build/src/tools/saxonhe.jam
 

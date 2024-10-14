@@ -523,6 +523,7 @@ if ( -Not ${skip-boost} ) {
     git submodule update --init tools/docca
     git submodule update --init tools/quickbook
     git submodule update --init tools/build
+    git submodule update --init tools/boostlook
 
     if ($typeoption -eq "main") {
         git submodule update --init tools/auto_index
