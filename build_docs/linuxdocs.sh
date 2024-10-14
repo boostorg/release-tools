@@ -326,6 +326,7 @@ if [ "$skipboostoption" != "yes" ] ; then
     git submodule update --init tools/boostdep
     git submodule update --init tools/docca
     git submodule update --init tools/quickbook
+    git submodule update --init tools/boostlook
 
     if [ "$typeoption" = "main" ]; then
         git submodule update --init tools/auto_index
