@@ -48,7 +48,7 @@ export PATH="${homebrew_base_path}/opt/gnu-getopt/bin:$PATH"
 
 # READ IN COMMAND-LINE OPTIONS
 
-TEMP=`${homebrew_base_path}/opt/gnu-getopt/bin/getopt -o t:,h::,q:: --long type:,help::,skip-boost::,skip-packages::,quick::,boostrelease::,boostrootsubdir:: -- "$@"`
+TEMP=`${homebrew_base_path}/opt/gnu-getopt/bin/getopt -o t:,h::,q:: --long type:,help::,skip-boost::,skip-packages::,quick::,boostrelease::,boostrootsubdir::,debug:: -- "$@"`
 eval set -- "$TEMP"
 
 # extract options and their arguments into variables.
@@ -70,7 +70,8 @@ optional arguments:
   --skip-packages       Skip installing all packages (pip, gem, apt, etc.) if you are certain that has already been done.
   -q, --quick           Equivalent to setting both --skip-boost and --skip-packages. If not sure, then don't skip these steps.
   --boostrelease        Add the target //boostrelease to the doc build. This target is used when building production releases.
-  --boostrootsubdir    If creating a boost-root directory, instead of placing it in ../ use a subdirectory.
+  --boostrootsubdir     If creating a boost-root directory, instead of placing it in ../ use a subdirectory.
+  --debug               Debugging.
 standard arguments:
   path_to_library       Where the library is located. Defaults to current working directory.
 """
@@ -87,6 +88,8 @@ standard arguments:
             esac ;;
         --skip-boost)
             skipboostoption="yes" ; shift 2 ;;
+        --debug)
+            debugoption="yes" ; set -x ; shift 2 ;;
         --skip-packages)
             skippackagesoption="yes" ; shift 2 ;;
         -q|--quick)
