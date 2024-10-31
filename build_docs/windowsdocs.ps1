@@ -1,8 +1,9 @@
-
 # Copyright 2022 Sam Darwin
 #
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or copy at http://boost.org/LICENSE_1_0.txt)
+
+[System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingInvokeExpression', '')]
 
 param (
    [Parameter(Mandatory=$false)][alias("path")][string]$pathoption = "",
@@ -17,8 +18,11 @@ param (
 
 $scriptname="windowsdocs.ps1"
 $pythonvirtenvpath="${HOME}\venvboostdocs"
+$nvm_install_version="1.1.11"
+$node_version="20.17.0"
+$node_version_basic="20"
 
-# Set-PSDebug -Trace 1
+Set-PSDebug -Trace 1
 
 if ($help) {
 
@@ -44,7 +48,7 @@ standard arguments:
   path_to_library       Where the library is located. Defaults to current working directory.
 "
 
-echo $helpmessage
+Write-Output $helpmessage
 exit 0
 }
 if ($quick) { ${skip-boost} = $true ; ${skip-packages} = $true ; }
@@ -57,12 +61,13 @@ else {
 
 if ($boostrootsubdir) {
     ${BOOSTROOTRELPATH} = "."
+    ${boostrootsubdiroption} = "yes"
   }
 else {
     ${BOOSTROOTRELPATH} = ".."
 }
 
-pushd
+Push-Location
 
 function refenv {
 
@@ -85,12 +90,12 @@ function refenv {
 
 if ( -Not ${skip-packages} ) {
     if ( -Not (Get-Command choco -errorAction SilentlyContinue) ) {
-        echo "Install chocolatey"
-        iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
+        Write-Output "Install chocolatey"
+        Invoke-Expression ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
     }
 
     if ( -Not (Get-Command git -errorAction SilentlyContinue) ) {
-        echo "Install git"
+        Write-Output "Install git"
         choco install -y --no-progress git
     }
 
@@ -110,12 +115,12 @@ function DownloadWithRetry([string] $url, [string] $downloadLocation, [int] $ret
         catch
         {
             $exceptionMessage = $_.Exception.Message
-            Write-Host "Failed to download '$url': $exceptionMessage"
+            Write-Output "Failed to download '$url': $exceptionMessage"
             if ($retries -gt 0) {
                 $retries--
-                Write-Host "Waiting 10 seconds before retrying. Retries left: $retries"
+                Write-Output "Waiting 10 seconds before retrying. Retries left: $retries"
                 Start-Sleep -Seconds 10
- 
+
             }
             else
             {
@@ -127,13 +132,13 @@ function DownloadWithRetry([string] $url, [string] $downloadLocation, [int] $ret
 }
 
 if ($pathoption) {
-    echo "Library path set to $pathoption. Changing to that directory."
-    cd $pathoption
+    Write-Output "Library path set to $pathoption. Changing to that directory."
+    Set-Location $pathoption
 }
 else
 {
-    $workingdir = pwd
-    echo "Using current working directory $workingdir."
+    $workingdir = Get-Location | Foreach-Object { $_.Path }
+    Write-Output "Using current working directory $workingdir."
 }
 
 # DETERMINE REPOSITORY
@@ -147,16 +152,16 @@ else {
 }
 
 if (($REPONAME -eq "empty") -or ($REPONAME -eq "release-tools")) {
-    echo ""
-    echo "Set the path_to_library as the first command-line argument:"
-    echo ""
-    echo "$scriptname _path_to_library_"
-    echo ""
-    echo "Or change the working directory to that first."
+    Write-Output ""
+    Write-Output "Set the path_to_library as the first command-line argument:"
+    Write-Output ""
+    Write-Output "$scriptname _path_to_library_"
+    Write-Output ""
+    Write-Output "Or change the working directory to that first."
     exit 1
 }
 else {
-    echo "REPONAME is $REPONAME"
+    Write-Output "REPONAME is $REPONAME"
 }
 
 $BOOST_SRC_FOLDER=git rev-parse --show-toplevel
@@ -164,19 +169,28 @@ if ( ! $LASTEXITCODE -eq 0)  {
     $BOOST_SRC_FOLDER="nofolder"
 }
 else {
-    echo "BOOST_SRC_FOLDER is $BOOST_SRC_FOLDER"
+    Write-Output "BOOST_SRC_FOLDER is $BOOST_SRC_FOLDER"
+}
+
+# The purpose of this is to allow nvm/npm/node to use a subdirectory of the library in CI, so the job is self-contained
+# and doesn't use external directories.
+# On WINDOWS, this has not yet been tested. It's not certain that it must be done, or if there are side-effects.
+# Copying the logic from linuxdocs.sh. Since CI isn't usually done on Windows, it may not be important.
+if ( ${boostrootsubdiroption} -eq "yes" ) {
+    New-Item -Path "${BOOST_SRC_FOLDER}\"  -Name "tmp_home" -ItemType "directory"
+    Set-Variable HOME "${BOOST_SRC_FOLDER}\tmp_home" -Force
 }
 
 $PARENTNAME=[io.path]::GetFileNameWithoutExtension($(git --git-dir $BOOST_SRC_FOLDER/../.git config --get remote.origin.url))
 if ( $PARENTNAME -eq "boost" ) {
-    echo "Starting out inside boost-root"
+    Write-Output "Starting out inside boost-root"
     $BOOSTROOTLIBRARY="yes"
     $BOOSTROOTRELPATH=".."
 }
 else {
     $PARENTNAME=[io.path]::GetFileNameWithoutExtension($(git --git-dir $BOOST_SRC_FOLDER/../../.git config --get remote.origin.url))
     if ( $PARENTNAME -eq "boost" ) {
-        echo "Starting out inside boost-root"
+        Write-Output "Starting out inside boost-root"
         $BOOSTROOTLIBRARY="yes"
         $BOOSTROOTRELPATH="../.."
     }
@@ -184,12 +198,12 @@ else {
         $PARENTNAME=[io.path]::GetFileNameWithoutExtension($(git --git-dir $BOOST_SRC_FOLDER/../../../.git config --get remote.origin.url))
         if ( $PARENTNAME -eq "boost" )
         {
-            echo "Starting out inside boost-root"
+            Write-Output "Starting out inside boost-root"
             $BOOSTROOTLIBRARY="yes"
             $BOOSTROOTRELPATH="../../.."
         }
         else {
-            echo "Not starting out inside boost-root"
+            Write-Output "Not starting out inside boost-root"
             $BOOSTROOTLIBRARY="no"
             }
     }
@@ -200,12 +214,16 @@ else {
 # Generally, boostorg/release-tools treats all libraries the same, meaning it installs one set of packages and executes b2.
 # Therefore all libraries ought to build under 'main' and shouldn't need anything customized.
 
-$all_types="main cppalv1"
+$all_types="main antora cppalv1"
 # $cppalv1_types="json beast url http_proto socks_proto zlib"
 $cppalv1_types="not_currently_used skipping_this"
 
 if (! $typeoption ) {
-    if ($cppalv1_types.contains($REPONAME)) {
+
+    if (Test-Path "$BOOST_SRC_FOLDER\doc\build_antora.sh") {
+        $typeoption="antora"
+    }
+    elseif ($cppalv1_types.contains($REPONAME)) {
         $typeoption="cppalv1"
     }
     else {
@@ -213,15 +231,15 @@ if (! $typeoption ) {
     }
 }
 
-echo "Build type is $typeoption"
+Write-Output "Build type is $typeoption"
 
 if ( ! $all_types.contains($typeoption)) {
-    echo "Allowed types are currently 'main' and 'cppalv1'. Not $typeoption. Please choose a different option. Exiting."
+    Write-Output "Allowed types are currently 'main', 'antora' and 'cppalv1'. Not $typeoption. Please choose a different option. Exiting."
     exit 1
 }
 
 $REPO_BRANCH=git rev-parse --abbrev-ref HEAD
-echo "REPO_BRANCH is $REPO_BRANCH"
+Write-Output "REPO_BRANCH is $REPO_BRANCH"
 
 if ( $REPO_BRANCH -eq "master" )
 {
@@ -232,17 +250,17 @@ else
     $BOOST_BRANCH="develop"
 }
 
-echo "BOOST_BRANCH is $BOOST_BRANCH"
+Write-Output "BOOST_BRANCH is $BOOST_BRANCH"
 
-echo '==================================> INSTALL'
+Write-Output '==================================> INSTALL'
 
 # graphviz package added for historical reasons, might not be used.
 
 if ( -Not ${skip-packages} ) {
 
     if ( -Not (Get-Command choco -errorAction SilentlyContinue) ) {
-        echo "Install chocolatey"
-        iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
+        Write-Output "Install chocolatey"
+        Invoke-Expression ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
     }
     choco install -y --no-progress rsync
     choco install -y --no-progress sed
@@ -266,24 +284,66 @@ if ( -Not ${skip-packages} ) {
         choco install -y --no-progress git
     }
     if ($typeoption -eq "main") {
-    if ( -Not (Get-Command ruby -errorAction SilentlyContinue) )
-    {
-        choco install -y --no-progress ruby
-    }
-    if ( -Not (Get-Command wget -errorAction SilentlyContinue) )
-    {
-        choco install -y --no-progress wget
-    }
-    }
+        if ( -Not (Get-Command ruby -errorAction SilentlyContinue) )
+        {
+            choco install -y --no-progress ruby
+        }
+        if ( -Not (Get-Command wget -errorAction SilentlyContinue) )
+        {
+            choco install -y --no-progress wget
+        }
+        }
 
     refenv
 
-    if ( -Not (Get-Command python3 -errorAction SilentlyContinue) )
-    {
-        # create a symbolic link since windows doesn't have python3
-        $pythoncommandpath=(Get-Command python).Path
-        $python3commandpath=(Get-Command python).Path -replace 'python.exe', 'python3.exe'
-        New-Item -ItemType SymbolicLink -Path "$python3commandpath" -Target "$pythoncommandpath"
+    if ($typeoption -eq "antora") {
+
+        if ( -Not (Get-Command clang++ -errorAction SilentlyContinue) )
+        {
+            choco install -y --no-progress llvm
+        }
+
+        if ( -Not (Get-Command 7z -errorAction SilentlyContinue) )
+        {
+            choco install -y --no-progress 7zip.install
+        }
+
+        if ( -Not (Get-Command cmake -errorAction SilentlyContinue) )
+        {
+            choco install -y cmake --installargs 'ADD_CMAKE_TO_PATH=System' --apply-install-arguments-to-dependencies
+        }
+
+        if ( -Not (Get-Command ninja -errorAction SilentlyContinue) )
+        {
+            choco install -y ninja
+            Expand-Archive -LiteralPath 'C:\ProgramData\chocolatey\lib\ninja\tools\ninja-win_x32.zip' -DestinationPath C:\windows\system32\
+        }
+
+        if ( -Not (Get-Command nvm -errorAction SilentlyContinue) )
+          {
+              # 1.1.12 doesn't allow reading stdout. Will be fixed in 1.1.13 supposedly.
+              choco install -y --no-progress nvm.install --version ${nvm_install_version}
+              Write-Output "NVM was just installed. Close this terminal window, and then restart the script."
+              Write-Output "The process has not finished. Please open a new terminal window. And restart the script."
+              exit 0
+          }
+
+        refenv
+
+        if (nvm list | Select-String "${node_version}")
+        {
+            # Node already installed
+            ForEach-Object 'foo'
+        }
+        else
+        {
+            nvm install $node_version
+            nvm use $node_version_basic
+        }
+
+        npm install gulp-cli@2.3.0
+        npm install @mermaid-js/mermaid-cli@10.5.1
+
     }
 
     if ($typeoption -eq "main") {
@@ -304,8 +364,9 @@ if ( -Not ${skip-packages} ) {
         gem install asciidoctor-diagram --version 2.2.14
         gem install asciidoctor-multipage --version 0.0.18
         pip3 install docutils
-        wget -O rapidxml.zip http://sourceforge.net/projects/rapidxml/files/latest/download
-        unzip -n -d rapidxml rapidxml.zip
+        ## Invoke-WebRequest -O rapidxml.zip http://sourceforge.net/projects/rapidxml/files/latest/download
+        # Invoke-WebRequest -O rapidxml.zip https://downloads.sourceforge.net/project/rapidxml/rapidxml/rapidxml%201.13/rapidxml-1.13.zip
+        # unzip -n -d rapidxml rapidxml.zip
         #
         # pip3 had been using --user. what will happen without.
         pip3 install https://github.com/bfgroup/jam_pygments/archive/master.zip
@@ -353,14 +414,16 @@ if ( -Not ${skip-packages} ) {
 
     # Copy-Item "C:\Program Files\doxygen\bin\doxygen.exe" "C:\Windows\System32\doxygen.exe"
 
-    cd $BOOST_SRC_FOLDER
-    cd $BOOSTROOTRELPATH
+    if ( ( $typeoption -eq "cppalv1" ) -Or ($typeoption -eq "main" )) {
+
+    Set-Location $BOOST_SRC_FOLDER
+    Set-Location $BOOSTROOTRELPATH
     if ( -Not (Test-Path -Path "tmp") )
     {
         mkdir tmp
     }
 
-    cd tmp
+    Set-Location tmp
 
     # Install saxon
     if ( -Not (Test-Path -Path "C:\usr\share\java\Saxon-HE.jar") )
@@ -369,7 +432,7 @@ if ( -Not ${skip-packages} ) {
         $destination = 'saxonhe.zip'
         if ( Test-Path -Path $destination)
         {
-            rm $destination
+            Remove-Item $destination
         }
         if ( Test-Path -Path "saxonhe")
         {
@@ -379,15 +442,15 @@ if ( -Not ${skip-packages} ) {
         # Start-BitsTransfer -Source $source -Destination $destination
 	DownloadWithRetry -url $source -downloadLocation $destination -retries 6
         Expand-Archive .\saxonhe.zip
-        cd saxonhe
+        Set-Location saxonhe
         if ( -Not (Test-Path -Path "C:\usr\share\java") )
         {
             mkdir "C:\usr\share\java"
         }
-        cp saxon9he.jar Saxon-HE.jar
-        cp Saxon-HE.jar "C:\usr\share\java\"
+        Copy-Item saxon9he.jar Saxon-HE.jar
+        Copy-Item Saxon-HE.jar "C:\usr\share\java\"
     }
-
+}
 }
 
 # In the above 'packages' section a python virtenv was created. Activate it, if that has not been done already.
@@ -395,6 +458,10 @@ if ( -Not ${skip-packages} ) {
 if ( Test-Path "${pythonvirtenvpath}\Scripts\activate" ) {
     "${pythonvirtenvpath}\Scripts\activate"
 }
+
+if ( $typeoption -eq "antora" ) {
+    nvm use $node_version_basic
+    }
 
 # re-adding the path fix from above, even if skip-packages was set.
 $newpathitem="C:\Program Files\Git\usr\bin"
@@ -405,7 +472,7 @@ if( (Test-Path -Path $newpathitem) -and -Not ( $env:Path -like "*$newpathitem*")
 
     }
 
-cd $BOOST_SRC_FOLDER
+Set-Location $BOOST_SRC_FOLDER
 
 function getlibrarypath {
    param (
@@ -422,30 +489,30 @@ function getlibrarypath {
 if ( ${skip-boost} ) {
     # skip-boost was set. A reduced set of actions.
     if ( $BOOSTROOTLIBRARY -eq "yes" ) {
-        cd $BOOSTROOTRELPATH
+        Set-Location $BOOSTROOTRELPATH
         $Env:BOOST_ROOT=Get-Location | Foreach-Object { $_.Path }
-        echo "Env:BOOST_ROOT is $Env:BOOST_ROOT"
+        Write-Output "Env:BOOST_ROOT is $Env:BOOST_ROOT"
         $librarypath=getlibrarypath $REPONAME
     }
 
     else {
-	cd $BOOSTROOTRELPATH
+	Set-Location $BOOSTROOTRELPATH
         if ( -Not (Test-Path -Path "boost-root") ) {
-            echo "boost-root missing. Rerun this script without the -skip-boost or -quick option."
+            Write-Output "boost-root missing. Rerun this script without the -skip-boost or -quick option."
             exit 1
 	    }
         else {
-            cd boost-root
+            Set-Location boost-root
             $Env:BOOST_ROOT=Get-Location | Foreach-Object { $_.Path }
-            echo "Env:BOOST_ROOT is $Env:BOOST_ROOT"
+            Write-Output "Env:BOOST_ROOT is $Env:BOOST_ROOT"
             $librarypath=getlibrarypath $REPONAME
 
             if (Test-Path -Path "$librarypath")
             {
-                rmdir $librarypath -Force -Recurse
+                Remove-Item $librarypath -Force -Recurse
             }
             # Copy-Item -Exclude boost-root -Path $BOOST_SRC_FOLDER -Destination $librarypath -Recurse -Force
-	    robocopy $BOOST_SRC_FOLDER $librarypath /MIR /XD boost-root | Out-Null
+            robocopy $BOOST_SRC_FOLDER $librarypath /MIR /XD boost-root | Out-Null
             }
         }
     }
@@ -453,44 +520,47 @@ else {
     # skip-boost was not set. The standard flow.
     #
     if ( $BOOSTROOTLIBRARY -eq "yes" ) {
-        echo "updating boost-root"
-        cd $BOOSTROOTRELPATH
+        Write-Output "updating boost-root"
+        Set-Location $BOOSTROOTRELPATH
         git checkout $BOOST_BRANCH
         git pull
         $Env:BOOST_ROOT=Get-Location | Foreach-Object { $_.Path }
-        echo "Env:BOOST_ROOT is $Env:BOOST_ROOT"
+        Write-Output "Env:BOOST_ROOT is $Env:BOOST_ROOT"
         $librarypath=getlibrarypath $REPONAME
     }
     else {
-	cd $BOOSTROOTRELPATH
+	Set-Location $BOOSTROOTRELPATH
         if ( -Not (Test-Path -Path "boost-root") ) {
-            echo "cloning boost-root"
+            Write-Output "cloning boost-root"
             git clone -b $BOOST_BRANCH https://github.com/boostorg/boost.git boost-root --depth 1
-            cd boost-root
+            Set-Location boost-root
         }
         else {
-            echo "updating boost-root"
-            cd boost-root
+            Write-Output "updating boost-root"
+            Set-Location boost-root
             git checkout $BOOST_BRANCH
             git pull
         }
 
         $Env:BOOST_ROOT=Get-Location | Foreach-Object { $_.Path }
-        echo "Env:BOOST_ROOT is $Env:BOOST_ROOT"
+        Write-Output "Env:BOOST_ROOT is $Env:BOOST_ROOT"
         $librarypath=getlibrarypath $REPONAME
 
         if (Test-Path -Path "$librarypath")
         {
-            rmdir $librarypath -Force -Recurse
+            Remove-Item $librarypath -Force -Recurse
         }
         # Copy-Item -Exclude boost-root -Path $BOOST_SRC_FOLDER -Destination $librarypath -Recurse -Force
-	robocopy $BOOST_SRC_FOLDER $librarypath /MIR /XD boost-root | Out-Null
+        robocopy $BOOST_SRC_FOLDER $librarypath /MIR /XD boost-root | Out-Null
     }
 }
 
+# for Alan's antora scripts:
+$Env:BOOST_SRC_DIR=$Env:BOOST_ROOT
+
 if ( -Not ${skip-packages} ) {
     mkdir build
-    cd build
+    Set-Location build
     if ( -Not (Test-Path -Path docbook-xsl.zip) ) {
         Invoke-Webrequest -usebasicparsing -Outfile docbook-xsl.zip -uri https://github.com/docbook/xslt10-stylesheets/releases/download/release%2F1.79.2/docbook-xsl-1.79.2.zip
     }
@@ -498,12 +568,12 @@ if ( -Not ${skip-packages} ) {
         unzip -n -d docbook-xsl docbook-xsl.zip
     }
     if ( -Not (Test-Path -Path docbook-xml.zip) ) {
-        wget -O docbook-xml.zip http://www.docbook.org/xml/4.5/docbook-xml-4.5.zip
+        Invoke-WebRequest -O docbook-xml.zip http://www.docbook.org/xml/4.5/docbook-xml-4.5.zip
     }
     if ( -Not (Test-Path -Path docbook-xml) ) {
         unzip -n -d docbook-xml docbook-xml.zip
     }
-    cd ..
+    Set-Location ..
 }
 
 $Folder="$Env:BOOST_ROOT/build/docbook-xsl/docbook-xsl-1.79.2"
@@ -517,6 +587,7 @@ if (Test-Path -Path $Folder) {
 }
 
 if ( -Not ${skip-boost} ) {
+  if ( -Not ( ${typeoption} -eq "antora" ) ) {
     git submodule update --init libs/context
     git submodule update --init tools/boostbook
     git submodule update --init tools/boostdep
@@ -534,10 +605,10 @@ if ( -Not ${skip-boost} ) {
     if ( -Not ($BOOSTROOTLIBRARY -eq "yes") ) {
         if (Test-Path -Path "$librarypath")
         {
-            rmdir $librarypath -Force -Recurse
+            Remove-Item $librarypath -Force -Recurse
         }
         # Copy-Item -Exclude boost-root -Path $BOOST_SRC_FOLDER -Destination $librarypath -Recurse -Force
-	robocopy $BOOST_SRC_FOLDER $librarypath /MIR /XD boost-root | Out-Null
+        robocopy $BOOST_SRC_FOLDER $librarypath /MIR /XD boost-root | Out-Null
     }
 
     $matcher='\.saxonhe_jar = \$(jar\[1\]) ;$'
@@ -546,11 +617,14 @@ if ( -Not ${skip-boost} ) {
 
     python tools/boostdep/depinst/depinst.py ../tools/quickbook
 
-    echo "Running bootstrap.bat"
+    Write-Output "Running bootstrap.bat"
     ./bootstrap.bat
 
-    echo "Running ./b2 headers"
+    Write-Output "Running ./b2 headers"
     ./b2 headers
+}}
+else {
+Write-Output "Skipping those submodules"
 }
 
 # Adjust PATH
@@ -566,55 +640,97 @@ if( -Not ( $env:Path -like "*$newpathitem*"))
     {
            $env:Path = "$newpathitem;" + $env:Path
     }
-echo "new env:Path is $env:Path"
+Write-Output "new env:Path is $env:Path"
 
-echo '==================================> COMPILE'
+Write-Output '==================================> COMPILE'
 
 # exceptions:
 
 # $toolslist="auto_index bcp boostbook boostdep boost_install build check_build cmake docca inspect litre quickbook"
 $toolslist = @("auto_index", "bcp", "boostbook", "boostdep", "boost_install", "build", "check_build", "cmake", "docca", "inspect", "litre", "quickbook")
 if ( ($toolslist.contains($REPONAME)) -and ("$boostreleasetarget" -eq "//boostrelease" )) {
-    echo "The boost tools do not have a //boostrelease target in their Jamfile. Run the build without -boostrelease instead."
+    Write-Output "The boost tools do not have a //boostrelease target in their Jamfile. Run the build without -boostrelease instead."
     exit 0
 }
 
 if (($librarypath -match "numeric") -and ($boostreleasetarget -eq "//boostrelease")) {
-    echo "The //boostrelease version of the numeric libraries should be run from the top level. That is, in the numeric/ directory. For this script it is a special case. TODO."
+    Write-Output "The //boostrelease version of the numeric libraries should be run from the top level. That is, in the numeric/ directory. For this script it is a special case. TODO."
     exit 0
 }
 
 if ( -Not (Test-Path -Path $librarypath/doc/ )) {
-    echo "doc/ folder is missing for this library. No need to compile. Exiting."
+    Write-Output "doc/ folder is missing for this library. No need to compile. Exiting."
     exit 0
 }
 
-if ( (Test-Path -Path $librarypath/doc/Jamfile) -or (Test-Path -Path $librarypath/doc/Jamfile.v2) -or (Test-Path -Path $librarypath/doc/Jamfile.v3) -or (Test-Path -Path $librarypath/doc/Jamfile.jam) -or (Test-Path -Path $librarypath/doc/build.jam)) {
+if ( (Test-Path -Path $librarypath/doc/build_antora.sh ) -or (Test-Path -Path $librarypath/doc/Jamfile) -or (Test-Path -Path $librarypath/doc/Jamfile.v2) -or (Test-Path -Path $librarypath/doc/Jamfile.v3) -or (Test-Path -Path $librarypath/doc/Jamfile.jam) -or (Test-Path -Path $librarypath/doc/build.jam)) {
   }
 else {
-    echo "doc/Jamfile or similar is missing for this library. No need to compile. Exiting."
+    Write-Output "doc/Jamfile or similar is missing for this library. No need to compile. Exiting."
     exit 0
 }
 
 if ("$REPONAME" -eq "geometry") {
-    echo "In geometry exception. running ./b2 $librarypath/doc/src/docutils/tools/doxygen_xml2qbk"
-    ./b2 $librarypath/doc/src/docutils/tools/doxygen_xml2qbk
-    echo "running pwd"
-    pwd
-    echo "running dir dist\bin"
-    dir dist\bin
-    echo "checking path"
-    echo $env:Path
+    Write-Output "In geometry exception. running ./b2 $librarypath/doc/src/docutils/tools/doxygen_xml2qbk"
+    ./b2 $librarypath/doc/src/docutils/tools/doxygen_xml2qbk/
+    Write-Output "running Get-Location"
+    Get-Location
+    Write-Output "running dir dist\bin"
+    Get-ChildItem dist\bin
+    Write-Output "checking path"
+    Write-Output $env:Path
     # moving this to PATH var
-    # echo "running cp dist/bin/doxygen_xml2qbk C:\windows\system32"
+    # Write-Output "running cp dist/bin/doxygen_xml2qbk C:\windows\system32"
     # cp dist/bin/doxygen_xml2qbk.exe C:\windows\system32
     try { (Get-Command doxygen_xml2qbk.exe).Path }
-    catch { echo "couldn't find doxygen_xml2qbk.exe" }
+    catch { Write-Output "couldn't find doxygen_xml2qbk.exe" }
 }
 
 # the main compilation:
 
-if ($typeoption -eq "main") {
+if ($typeoption -eq "antora") {
+    $library_is_submodule=""
+    $timestamp=""
+    if ( Test-Path "${librarypath}\.git" -PathType Leaf ) {
+        $library_is_submodule="true"
+        $timestamp=[int](Get-Date -UFormat %s -Millisecond 0)
+        Write-Output "Antora will not run on a git module. Copying to /tmp"
+        New-Item -Path "c:\" -Name "tmp" -ItemType "directory"  -Force
+        New-Item -Path "c:\tmp" -Name "builddocs-${timestamp}"  -ItemType "directory"  -Force
+        New-Item -Path "c:\tmp\builddocs-${timestamp}" -Name "${REPONAME}" -ItemType "directory"  -Force
+        robocopy "${librarypath}" "C:\tmp\builddocs-${timestamp}\${REPONAME}" /MIR /np /nfl
+        Set-Location "C:\tmp\builddocs-${timestamp}\${REPONAME}"
+        Get-ChildItem
+        Remove-Item .git -Force
+        git init
+        git config user.email "test@example.com"
+        git config user.name "test"
+        git add .
+        git commit -m "initial commit"
+        Set-Location doc
+    }
+    else {
+     Set-Location ${librarypath}/doc
+      }
+	dos2unix .\build_antora.sh
+    & 'C:\Program Files\Git\bin\bash.exe' .\build_antora.sh
+    if ( ! $LASTEXITCODE -eq 0)  {
+         Write-Output "build_antora failed. exiting."
+         exit 1
+    }
+
+    if ( -Not (Test-Path -Path "build\site\index.html") ) {
+        Write-Output "build\site\index.html is missing. It is likely that antora did not complete successfully."
+        exit 1
+    }
+
+    if ( $library_is_submodule -eq "true" ) {
+        New-Item -Path "${BOOST_ROOT}\${librarypath}\doc\" -Name "build" -ItemType "directory"  -Force
+        robocopy build "${BOOST_ROOT}\${librarypath}\doc\build" /MIR /np /nfl
+		Write-Output "The exit code of robocopy was $LASTEXITCODE."
+    }
+}
+elseif ($typeoption -eq "main") {
 
     $asciidoctorpath=(Get-Command asciidoctor).Path -replace '\\', '/'
     $autoindexpath="$Env:BOOST_ROOT/build/dist/bin/auto_index.exe"
@@ -622,13 +738,13 @@ if ($typeoption -eq "main") {
     $quickbookpath="$Env:BOOST_ROOT/build/dist/bin/quickbook.exe"
     $quickbookpath=$quickbookpath -replace '\\', '/'
 
-    ./b2 -q -d0 --build-dir=build --distdir=build/dist tools/quickbook tools/auto_index/build
+    ./b2 -q -d0 --build-dir=build --distdir=build/dist tools/quickbook tools/auto_index
     $content="using quickbook : `"$quickbookpath`" ; using auto-index : `"$autoindexpath`" ; using docutils ; using doxygen : `"/Program Files/doxygen/bin/doxygen.exe`" ; using boostbook ; using asciidoctor : `"$asciidoctorpath`" ; using saxonhe ;"
     $filename="$Env:BOOST_ROOT\tools\build\src\user-config.jam"
     [IO.File]::WriteAllLines($filename, $content)
     ./b2 -d 2 $librarypath/doc${boostreleasetarget}
      if ( ! $LASTEXITCODE -eq 0)  {
-         echo "doc build failed. exiting."
+         Write-Output "doc build failed. exiting."
          exit 1
      }
 }
@@ -638,15 +754,22 @@ elseif ($typeoption -eq "cppalv1") {
     [IO.File]::WriteAllLines($filename, $content)
     ./b2 -d 2 $librarypath/doc${boostreleasetarget}
      if ( ! $LASTEXITCODE -eq 0)  {
-         echo "doc build failed. exiting."
+         Write-Output "doc build failed. exiting."
          exit 1
      }
 }
 
+if ( $typeoption -eq "antora") {
+    $result_sub_path="doc/build/site/"
+   }
+else {
+    $result_sub_path="doc/html/"
+}
+
 if ($BOOSTROOTLIBRARY -eq "yes") {
-    echo ""
-    echo "Build completed. View the results in $librarypath/doc/html"
-    echo ""
+    Write-Output ""
+    Write-Output "Build completed. View the results in $librarypath/$result_sub_path"
+    Write-Output ""
 }
 else {
     if ($BOOSTROOTRELPATH -eq ".") {
@@ -655,9 +778,11 @@ else {
     else {
         $pathfiller="/${BOOSTROOTRELPATH}/"
     }
-    echo ""
-    echo "Build completed. View the results in ${BOOST_SRC_FOLDER}${pathfiller}boost-root/$librarypath/doc/html"
-    echo ""
+    Write-Output ""
+    Write-Output "Build completed. View the results in ${BOOST_SRC_FOLDER}${pathfiller}boost-root/$librarypath/$result_sub_path"
+    Write-Output ""
 }
 
-popd
+Pop-Location
+echo "At the end of $scriptname"
+exit 0

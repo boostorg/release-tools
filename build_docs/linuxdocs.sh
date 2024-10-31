@@ -67,7 +67,7 @@ standard arguments:
 	--boostrelease)
 	    boostrelease="//boostrelease" ; shift 2 ;;
 	--boostrootsubdir)
-		BOOSTROOTRELPATH="." ; shift 2 ;;
+	    boostrootsubdiroption="yes" ; BOOSTROOTRELPATH="." ; shift 2 ;;
         --) shift ; break ;;
         *) echo "Internal error!" ; exit 1 ;;
     esac
@@ -96,6 +96,13 @@ fi
 
 export REPONAME=$(basename -s .git `git config --get remote.origin.url` 2> /dev/null || echo "empty")
 export BOOST_SRC_FOLDER=$(git rev-parse --show-toplevel 2> /dev/null || echo "nofolder")
+
+# The purpose of this is to allow nvm/npm/node to use a subdirectory of the library in CI, so the job is self-contained
+# and doesn't use external directories.
+if [ "${boostrootsubdiroption}" = "yes" ]; then
+    mkdir -p "${BOOST_SRC_FOLDER}/tmp_home"
+    export HOME=${BOOST_SRC_FOLDER}/tmp_home
+fi
 
 if [ "${REPONAME}" = "empty" -o "${REPONAME}" = "release-tools" ]; then
     echo -e "\nSet the path_to_library as the first command-line argument:\n\n$scriptname _path_to_library_\n\nOr change the working directory to that first.\n"
@@ -138,12 +145,15 @@ fi
 # Generally, boostorg/release-tools treats all libraries the same, meaning it installs one set of packages and executes b2.
 # Therefore all libraries ought to build under 'main' and shouldn't need anything customized.
 
-all_types="main cppalv1"
+all_types="main antora cppalv1"
 # cppalv1_types="json beast url http_proto socks_proto zlib"
 cppalv1_types="not_currently_used skipping_this"
 
 if [ -z "$typeoption" ]; then
-    if [[ " $cppalv1_types " =~ .*\ $REPONAME\ .* ]]; then
+    if [ -f "$BOOST_SRC_FOLDER/doc/build_antora.sh" ]; then
+        typeoption="antora"
+    elif [[ " $cppalv1_types " =~ .*\ $REPONAME\ .* ]]; then
+        # not used currently, but an example
         typeoption="cppalv1"
     else
         typeoption="main"
@@ -153,7 +163,7 @@ fi
 echo "Build type is ${typeoption}."
 
 if [[ !  " $all_types " =~ .*\ $typeoption\ .* ]]; then
-    echo "Allowed types are currently 'main' and 'cppalv1'. Not $typeoption. Please choose a different option. Exiting."
+    echo "Allowed types are currently 'main', 'antora' and 'cppalv1'. Not $typeoption. Please choose a different option. Exiting."
     exit 1
 fi
 
@@ -171,6 +181,27 @@ if [ "$skippackagesoption" != "yes" ]; then
 
     sudo apt-get install -y build-essential cmake curl default-jre-headless python3 python3-venv rsync unzip wget
 
+    if [ "$typeoption" = "antora" ]; then
+
+        mkdir -p ~/.nvm_${REPONAME}_antora
+        export NODE_VERSION=18.18.1
+        # The container has a pre-installed nodejs. Overwrite those again.
+        export NVM_BIN="$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/bin"
+        export NVM_DIR=$HOME/.nvm_${REPONAME}_antora
+        export NVM_INC=$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/include/node
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+        export NVM_DIR=$HOME/.nvm_${REPONAME}_antora
+        . "$NVM_DIR/nvm.sh" && nvm install ${NODE_VERSION}
+        . "$NVM_DIR/nvm.sh" && nvm use v${NODE_VERSION}
+        . "$NVM_DIR/nvm.sh" && nvm alias default v${NODE_VERSION}
+        export PATH="$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/bin/:${PATH}"
+        node --version
+        npm --version
+        npm install gulp-cli@2.3.0
+        npm install @mermaid-js/mermaid-cli@10.5.1
+
+
+    fi
     if [ "$typeoption" = "cppalv1" ]; then
         sudo apt-get install -y bison docbook docbook-xml docbook-xsl flex libfl-dev libsaxonhe-java xsltproc
     fi
@@ -213,32 +244,50 @@ if [ "$skippackagesoption" != "yes" ]; then
         # because they are out-of-date. When upgrading everything check the Dockerfiles and the other build scripts.
     fi
 
-    cd $BOOST_SRC_FOLDER
-    cd $BOOSTROOTRELPATH
-    mkdir -p tmp && cd tmp
+    if [ "$typeoption" = "cppalv1" ] || [ "$typeoption" = "main" ]; then
 
-    if which doxygen; then
-        echo "doxygen found"
-    else
-        echo "building doxygen"
-        if [ ! -d doxygen ]; then git clone -b 'Release_1_9_5' --depth 1 https://github.com/doxygen/doxygen.git && echo "not-cached" ; else echo "cached" ; fi
-        cd doxygen
-        cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Release
-        cd build
-        sudo make install
-        cd ../..
+        # Installing doxygen and saxonhe
+
+        cd $BOOST_SRC_FOLDER
+        cd $BOOSTROOTRELPATH
+        mkdir -p tmp && cd tmp
+
+        if which doxygen; then
+            echo "doxygen found"
+        else
+            echo "building doxygen"
+            if [ ! -d doxygen ]; then git clone -b 'Release_1_9_5' --depth 1 https://github.com/doxygen/doxygen.git && echo "not-cached" ; else echo "cached" ; fi
+            cd doxygen
+            cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Release
+            cd build
+            sudo make install
+            cd ../..
+        fi
+
+        if [ ! -f saxonhe.zip ]; then curl -s -S --retry 10 -L -o saxonhe.zip https://sourceforge.net/projects/saxon/files/Saxon-HE/9.9/SaxonHE9-9-1-4J.zip/download && echo "not-cached" ; else echo "cached" ; fi
+        unzip -d saxonhe -o saxonhe.zip
+        cd saxonhe
+        sudo rm /usr/share/java/Saxon-HE.jar || true
+        sudo cp saxon9he.jar /usr/share/java/Saxon-HE.jar
     fi
-
-    if [ ! -f saxonhe.zip ]; then curl -s -S --retry 10 -L -o saxonhe.zip https://sourceforge.net/projects/saxon/files/Saxon-HE/9.9/SaxonHE9-9-1-4J.zip/download && echo "not-cached" ; else echo "cached" ; fi
-    unzip -d saxonhe -o saxonhe.zip
-    cd saxonhe
-    sudo rm /usr/share/java/Saxon-HE.jar || true
-    sudo cp saxon9he.jar /usr/share/java/Saxon-HE.jar
 fi
 
 # In the above 'packages' section a python virtenv was created. Activate it, if that has not been done already.
 if [ -f ${pythonvirtenvpath}/bin/activate ]; then
     source ${pythonvirtenvpath}/bin/activate
+fi
+
+# In the above 'packages' section npm was installed. Activate it, if that has not been done already.
+if [ -d $HOME/.nvm_${REPONAME}_antora ]; then
+        export NODE_VERSION=18.18.1
+        # The container has a pre-installed nodejs. Overwrite those again.
+        export NVM_BIN="$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/bin"
+        export NVM_DIR=$HOME/.nvm_${REPONAME}_antora
+        export NVM_INC=$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/include/node
+        . "$NVM_DIR/nvm.sh" && nvm use v${NODE_VERSION}
+        export PATH="$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/bin/:${PATH}"
+        node --version
+        npm --version
 fi
 
 cd $BOOST_SRC_FOLDER
@@ -297,6 +346,9 @@ else
     fi
 fi
 
+# for Alan's antora scripts:
+export BOOST_SRC_DIR=${BOOST_ROOT}
+
 if [ "$skippackagesoption" != "yes" ] ; then
     mkdir -p build && cd build
     if [ ! -f docbook-xsl.zip ]; then
@@ -322,7 +374,7 @@ if [ -d ${BOOST_ROOT}/build/docbook-xml ]; then
     export DOCBOOK_DTD_DIR=${BOOST_ROOT}/build/docbook-xml
 fi
 
-if [ "$skipboostoption" != "yes" ] ; then
+if [ "$skipboostoption" != "yes" ] && [ "$typeoption" != "antora" ] ; then
 
     git submodule update --init libs/context
     git submodule update --init tools/boostbook
@@ -379,7 +431,7 @@ if [ ! -d $librarypath/doc ]; then
     exit 0
 fi
 
-if [ -f $librarypath/doc/Jamfile ] || [ -f $librarypath/doc/jamfile ] || [ -f $librarypath/doc/Jamfile.v2 ] || [ -f $librarypath/doc/jamfile.v2 ] || [ -f $librarypath/doc/Jamfile.v3 ] || [ -f $librarypath/doc/jamfile.v3 ] || [ -f $librarypath/doc/Jamfile.jam ] || [ -f $librarypath/doc/jamfile.jam ] || [ -f $librarypath/doc/build.jam ] ; then
+if [ -f $librarypath/doc/build_antora.sh ] ||  [ -f $librarypath/doc/Jamfile ] || [ -f $librarypath/doc/jamfile ] || [ -f $librarypath/doc/Jamfile.v2 ] || [ -f $librarypath/doc/jamfile.v2 ] || [ -f $librarypath/doc/Jamfile.v3 ] || [ -f $librarypath/doc/jamfile.v3 ] || [ -f $librarypath/doc/Jamfile.jam ] || [ -f $librarypath/doc/jamfile.jam ] || [ -f $librarypath/doc/build.jam ] ; then
      : # ok
 else
     echo "doc/Jamfile or similar is missing for this library. No need to compile. Exiting."
@@ -387,7 +439,7 @@ else
 fi
 
 if [ "$REPONAME" = "geometry" ]; then
-    ./b2 $librarypath/doc/src/docutils/tools/doxygen_xml2qbk
+    ./b2 $librarypath/doc/src/docutils/tools/doxygen_xml2qbk/
     # adjusting PATH var instead
     # cp dist/bin/doxygen_xml2qbk /usr/local/bin/
     echo "Debugging for macos. which sphinx-build"
@@ -400,19 +452,62 @@ fi
 
 # the main compilation:
 
+echo "DEBUGGING"
+pwd
+ls -al libs || true
+
 if [ "$typeoption" = "main" ]; then
-    ./b2 -q -d0 --build-dir=build --distdir=build/dist tools/quickbook tools/auto_index/build
+    ./b2 -q -d0 --build-dir=build --distdir=build/dist tools/quickbook tools/auto_index
     echo "using quickbook : build/dist/bin/quickbook ; using auto-index : build/dist/bin/auto_index ; using docutils : /usr/share/docutils ; using doxygen ; using boostbook ; using asciidoctor ; using saxonhe ;" > tools/build/src/user-config.jam
     ./b2 -j3 $librarypath/doc${boostrelease}
 
-elif  [ "$typeoption" = "cppalv1" ]; then
+elif [ "$typeoption" = "antora" ]; then
+    library_is_submodule=""
+    timestamp=""
+    if [ -f "${librarypath}/.git" ]; then
+        library_is_submodule="true"
+        timestamp=$(date +%s)
+        echo "Antora will not run on a git module. Copying to /tmp"
+        mkdir -p /tmp/builddocs-${timestamp}/${REPONAME}
+        cp -rp ${librarypath}/* /tmp/builddocs-${timestamp}/${REPONAME}/
+        cd /tmp/builddocs-${timestamp}/${REPONAME}/
+        rm -f .git
+        git init
+        git config user.email "test@example.com"
+        git config user.name "test"
+        git add .
+        git commit -m "initial commit"
+        cd doc
+    else 
+        cd ${librarypath}/doc
+    fi
+    chmod 755 build_antora.sh
+    ./build_antora.sh
+
+    if [ ! -f build/site/index.html ]; then
+        echo "build/site/index.html is missing. It is likely that antora did not complete successfully."
+        exit 1
+    fi
+        
+    if [ "$library_is_submodule" = "true" ]; then
+        mkdir -p ${BOOST_ROOT}/${librarypath}/doc/build/
+        cp -rp build/* ${BOOST_ROOT}/${librarypath}/doc/build/
+    fi   
+
+elif [ "$typeoption" = "cppalv1" ]; then
     echo "using doxygen ; using boostbook ; using saxonhe ;" > tools/build/src/user-config.jam
     ./b2 $librarypath/doc${boostrelease}
 fi
 
+if [ "$typeoption" = "antora" ]; then
+    result_sub_path="doc/build/site/"
+else
+    result_sub_path="doc/html/"
+fi
+
 if [ "${BOOSTROOTLIBRARY}" = "yes" ]; then
     echo ""
-    echo "Build completed. View the results in $librarypath/doc/html"
+    echo "Build completed. View the results in $librarypath/${result_sub_path}"
     echo ""
 else
     if  [ "$BOOSTROOTRELPATH" = "." ]; then
@@ -421,6 +516,6 @@ else
         pathfiller="/${BOOSTROOTRELPATH}/"
     fi
     echo ""
-    echo "Build completed. View the results in ${BOOST_SRC_FOLDER}${pathfiller}boost-root/$librarypath/doc/html"
+    echo "Build completed. View the results in ${BOOST_SRC_FOLDER}${pathfiller}boost-root/$librarypath/${result_sub_path}"
     echo ""
 fi
