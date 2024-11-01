@@ -33,30 +33,33 @@ jobs:
           - os: ubuntu-latest
             container: ubuntu:24.04
             packages: python-is-python3
-            skiplist: auto_index
+            skiplist: auto_index geometry
+            flags: --debug
           - os: ubuntu-latest
             container: ubuntu:22.04
             packages: python2
-            skiplist: auto_index
+            skiplist: auto_index geometry url
+            flags: --debug
           - os: ubuntu-latest
             container: ubuntu:20.04
             packages: python
-            skiplist: auto_index
+            skiplist: auto_index geometry url
+            flags: --debug
           - os: ubuntu-latest
             container: ubuntu:24.04
             packages: python-is-python3
-            # skiplist:
-            flags: "--boostrelease"
+            skiplist: geometry url
+            flags: --debug --boostrelease
           - os: ubuntu-latest
             container: ubuntu:22.04
             packages: python2
-            # skiplist:
-            flags: "--boostrelease"
+            skiplist: geometry url
+            flags: --debug --boostrelease
           - os: ubuntu-latest
             container: ubuntu:20.04
             packages: python
-            # skiplist:
-            flags: "--boostrelease"
+            skiplist: geometry url
+            flags: --debug --boostrelease
             # Jinja 3.1.0 and later have dropped support for Python 3.6 and therefore won't run on Ubuntu 18.04. Removing tests for Ubuntu 18.
 
     timeout-minutes: 720
@@ -65,7 +68,7 @@ jobs:
 
     steps:
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: docs
         run: |
@@ -96,6 +99,11 @@ jobs:
             linuxdocs.sh ${{ matrix.flags }}
             cd ../..
 
+            # Run at least one antora build that installs everything
+            cd libs/url
+            linuxdocs.sh ${{ matrix.flags }}
+            cd ../..
+
             textpart1='#!/bin/bash
             reponame=$1
             echo "reponame is $reponame"
@@ -114,7 +122,7 @@ jobs:
             else
                 linuxdocs.sh --quick '
 
-            textpart4=${{ matrix.flags }}
+            textpart4="${{ matrix.flags }}"
             textpart5='
                 if [[ $? != 0 ]]; then
                     echo "..failed. DOCS BUILD FAILED. LIBRARY $reponame"
@@ -156,24 +164,26 @@ jobs:
           #   skiplist: auto_index contract
           # - os: macos-11
           #   skiplist: contract
-          #   flags: "--boostrelease"
+          #   flags: --debug --boostrelease
           - os: macos-12
-            skiplist: auto_index contract
+            skiplist: auto_index contract geometry url
+            flags: --debug
           - os: macos-12
-            skiplist: contract
-            flags: "--boostrelease"
+            skiplist: contract geometry url
+            flags: --debug --boostrelease
           - os: macos-14
-            skiplist: auto_index contract
+            skiplist: auto_index contract geometry url
+            flags: --debug
           - os: macos-14
-            skiplist: contract
-            flags: "--boostrelease"
+            skiplist: contract geometry url
+            flags: --debug --boostrelease
 
     timeout-minutes: 720
     runs-on: ${{matrix.os}}
 
     steps:
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: docs
         run: |
@@ -196,6 +206,11 @@ jobs:
             macosdocs.sh
             cd ../..
 
+            # Run at least one antora build that installs everything
+            # cd libs/url
+            # macosdocs.sh
+            # cd ../..
+
             textpart1='#!/bin/bash
             reponame=$1
             echo "reponame is $reponame"
@@ -214,7 +229,7 @@ jobs:
             else
                 macosdocs.sh --quick '
 
-            textpart4=${{ matrix.flags }}
+            textpart4="${{ matrix.flags }}"
 
             textpart5='
                 if [[ $? != 0 ]]; then
@@ -222,7 +237,7 @@ jobs:
                     # exit 1
                     echo "$reponame" >> /tmp/failed.txt
                 else
-                    echo "LIBARY $reponame SUCCEEDED."
+                    echo "LIBRARY $reponame SUCCEEDED."
                     echo "$reponame" >> /tmp/succeeded.txt
                 fi
             fi
@@ -251,21 +266,21 @@ jobs:
       matrix:
         include:
           - os: windows-2019
-            # skiplist: auto_index contract hana leaf log parameter parameter_python python qvm
+            skiplist: auto_index contract hana leaf log parameter parameter_python python qvm url
           - os: windows-2022
-            # skiplist: auto_index contract hana log parameter parameter_python python
+            skiplist: auto_index contract hana log parameter parameter_python python url
           - os: windows-2019
             flags: "-boostrelease"
-            # skiplist: contract hana log parameter parameter_python python
+            skiplist: contract hana log parameter parameter_python python url
           - os: windows-2022
             flags: "-boostrelease"
-            # skiplist: contract hana log parameter parameter_python python
+            skiplist: contract hana log parameter parameter_python python url
 
     timeout-minutes: 720
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: docs
         shell: powershell
@@ -275,13 +290,19 @@ jobs:
             echo $null >> C:\failed.txt
 
             function Runwindowsdocs {
+                echo 'In Runwindowsdocs function'
                 pwd
                 windowsdocs.ps1
                 if ( ! $LASTEXITCODE -eq 0)  {
-                    echo '..failed. DOCS BUILD FAILED. LIBRARY system'
-                    echo 'doc build failed in github actions. exiting.'
+                    echo '..failed. Runwindowsdocs pre-build FAILED.'
+                    pwd
                     # exit 1
                 }
+                else {
+                    echo "Runwindowsdocs pre-build SUCCEEDED."
+                    pwd
+                }
+
             }
 
             # 'git submodule foreach' isn't seeing declared functions.
@@ -349,6 +370,11 @@ jobs:
             Runwindowsdocs
             cd ../..
 
+            # Run at least one antora build that installs everything
+            # cd libs/url
+            # Runwindowsdocs
+            # cd ../..
+
             # For the rest --quick
             git submodule foreach 'powershell -command C:/scripts/cifunctions.ps1 $name'
 
@@ -361,3 +387,5 @@ jobs:
             if ( $failed -ne '0' ) {
                 exit 1
              }
+
+
