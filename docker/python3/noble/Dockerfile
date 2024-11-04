@@ -104,7 +104,10 @@ RUN node --version
 RUN npm --version
 RUN npm install -g gulp-cli@2.3.0
 RUN npm install -g @mermaid-js/mermaid-cli@10.5.1
-
+# Temporary zip fix 1. Not working.
+# RUN wget http://launchpadlibrarian.net/740831076/zip_3.0-14_amd64.deb && sudo dpkg -i zip_3.0-14_amd64.deb && rm zip_3.0-14_amd64.deb
+# Temporary zip fix 2:
+COPY zip /usr/bin/zip
 ENV LC_ALL en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US.UTF-8
