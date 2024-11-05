@@ -347,7 +347,9 @@ else
 fi
 
 # for Alan's antora scripts:
-export BOOST_SRC_DIR=${BOOST_ROOT}
+if [ "$EXPORT_BOOST_SRC_DIR" = "yes" ]; then
+    export BOOST_SRC_DIR=${BOOST_ROOT}
+fi
 
 if [ "$skippackagesoption" != "yes" ] ; then
     mkdir -p build && cd build

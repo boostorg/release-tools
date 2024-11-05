@@ -75,6 +75,8 @@ jobs:
             set -x
             set -e
 
+            export EXPORT_BOOST_SRC_DIR="yes"
+
             touch /tmp/failed.txt
             touch /tmp/succeeded.txt
 
@@ -190,6 +192,8 @@ jobs:
             set -x
             set -e
 
+            export EXPORT_BOOST_SRC_DIR="yes"
+
             touch /tmp/failed.txt
             touch /tmp/succeeded.txt
 
@@ -285,6 +289,8 @@ jobs:
       - name: docs
         shell: powershell
         run: |
+
+            $env:EXPORT_BOOST_SRC_DIR="yes"
 
             echo $null >> C:\succeeded.txt
             echo $null >> C:\failed.txt
