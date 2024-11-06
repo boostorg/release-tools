@@ -108,6 +108,10 @@ RUN npm install -g @mermaid-js/mermaid-cli@10.5.1
 # RUN wget http://launchpadlibrarian.net/740831076/zip_3.0-14_amd64.deb && sudo dpkg -i zip_3.0-14_amd64.deb && rm zip_3.0-14_amd64.deb
 # Temporary zip fix 2:
 COPY zip /usr/bin/zip
+# For other CI jobs:
+RUN groupadd -g 150 jenkins
+RUN useradd jenkins -u 150 -g 150 -m -s /bin/bash
+RUN echo "ALL ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/all
 ENV LC_ALL en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US.UTF-8
