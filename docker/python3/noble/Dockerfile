@@ -28,6 +28,7 @@ RUN set -xe \
         jq \
         libsaxonhe-java \
         openssh-client \
+        openssl libssl-dev \
         p7zip-full  \
         python-is-python3 \
         python3-pip \
