@@ -47,6 +47,9 @@ jfrogURL = "https://boostorg.jfrog.io/artifactory/"
 fastlyURL = "https://archives.boost.io/"
 s3_archives_bucket = "boost-archives"
 aws_profile = "production"
+# git tag settings:
+
+# webhook settings:
 
 # defaults, used later
 stagingPath2 = ""
@@ -191,6 +194,10 @@ def preflight():
             if not answer or answer[0].lower() != "y":
                 print("Exiting.")
                 exit(1)
+
+    # github verification:
+
+    # webhook verification:
 
 
 #####
