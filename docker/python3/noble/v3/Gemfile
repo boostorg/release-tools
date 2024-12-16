@@ -1,0 +1,7 @@
+source 'http://rubygems.org'
+
+gem 'asciidoctor',' 2.0.23'
+gem 'asciidoctor-diagram', '2.3.1'
+gem 'asciidoctor-multipage', '0.0.19'
+gem 'rouge', '4.5.1'
+gem 'pygments.rb', '3.0.0'
