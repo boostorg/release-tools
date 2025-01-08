@@ -48,6 +48,8 @@ fastlyURL = "https://archives.boost.io/"
 s3_archives_bucket = "boost-archives"
 aws_profile = "production"
 # git tag settings:
+boost_repo_url = "git@github.com:boostorg/boost.git"
+boost_branch = "master"
 
 # webhook settings:
 
@@ -174,8 +176,118 @@ def copyStagingS3():
         print(result)
 
 
+def git_tags():
+    if options.rc != None or not git_tag:
+        print("This is a release candidate. Not tagging.")
+        # Is this right? There are currently no release candidate tags.
+        return
+
+    boost_repo_parent_dir = str(Path.home()) + "/github/release-tools-cache"
+    Path(boost_repo_parent_dir).mkdir(parents=True, exist_ok=True)
+    origDir = os.getcwd()
+    os.chdir(boost_repo_parent_dir)
+
+    if not os.path.isdir("boost"):
+        result = subprocess.run(
+            f"git clone -b {boost_branch} {boost_repo_url}",
+            shell=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            print("git checkout failed")
+            print(result)
+            exit(1)
+    os.chdir("boost")
+    print("checking branch")
+    result = subprocess.run(
+        f" git rev-parse --abbrev-ref HEAD", capture_output=True, shell=True, text=True
+    )
+    if not boost_branch in result.stdout:
+        print("branch check failed")
+        print(result)
+        exit(1)
+    print("checking remote")
+    result = subprocess.run(
+        f"git remote -v | grep origin", capture_output=True, shell=True, text=True
+    )
+    if not boost_repo_url in result.stdout:
+        print("git remote check failed")
+        print(result)
+        exit(1)
+    print("git pull")
+    result = subprocess.run(f"git pull", shell=True, capture_output=True, text=True)
+    if result.returncode != 0:
+        print("git pull failed")
+        print(result)
+        exit(1)
+    print("git submodule update --init --recursive  --checkout")
+    result = subprocess.run(
+        "git submodule update --init --recursive --checkout", shell=True, text=True
+    )
+    if result.returncode != 0:
+        print("git submodule update failed")
+        print(result)
+        exit(1)
+    print(f"git tag {git_tag}")
+    result = subprocess.run(f"git tag {git_tag}", shell=True, text=True)
+    if result.returncode != 0:
+        print("git tag failed")
+        print(result)
+        exit(1)
+    print(f"git submodule foreach 'git tag {git_tag}'")
+    result = subprocess.run(
+        f"git submodule foreach 'git tag {git_tag}'", shell=True, text=True
+    )
+    if result.returncode != 0:
+        print("git tag submodules failed")
+        print(result)
+        exit(1)
+
+    print(
+        f"The git submodules have been tagged in {boost_repo_parent_dir}/boost. That should be fine, but you may review. The next step will be 'git push'."
+    )
+    answer = input("Do you want to continue: [y/n]")
+    if not answer or answer[0].lower() != "y":
+        print("Exiting.")
+        exit(1)
+    print(f"git push origin {git_tag}")
+    result = subprocess.run(f"git push origin {git_tag}", shell=True, text=True)
+    if result.returncode != 0:
+        print("git push failed")
+        print(result)
+        exit(1)
+
+    # Submodules in series. Slower.
+    # print(f"git submodule foreach 'git push origin {git_tag}'")
+    # result = subprocess.run(
+    #     f"git submodule foreach 'git push origin {git_tag}'", shell=True, text=True
+    # )
+
+    # Submodules in a parallel loop. Faster.
+    print(
+        f"Running the equivalent of the following in a bash loop: git submodule foreach 'git push origin {git_tag}'"
+    )
+    subcommand = "git push origin %s" % git_tag
+    result = subprocess.run(
+        "for DIR in $(git submodule foreach -q sh -c pwd); do cd $DIR && %s & done"
+        % subcommand,
+        text=True,
+        shell=True,
+    )
+    if result.returncode != 0:
+        print("git push submodules failed")
+        print(result)
+        exit(1)
+
+    # function complete
+    os.chdir(origDir)
+
+
 def preflight():
     load_dotenv()
+
+    print("Test ssh to brorigin servers")
+
     SSH_USER = os.getenv("SSH_USER", "mclow")
     for origin in ["brorigin1.cpp.al", "brorigin2.cpp.al"]:
         result = subprocess.run(
@@ -196,6 +308,24 @@ def preflight():
                 exit(1)
 
     # github verification:
+    print("Test github connection")
+
+    result = subprocess.run(
+        f"ssh -T git@github.com",
+        shell=True,
+        capture_output=True,
+        text=True,
+    )
+    if not "successfully authenticated" in result.stderr:
+        print("GITHUB TEST FAILED")
+        print(
+            "Preflight test of your connection to github failed. This command was run: 'ssh -T git@github.com' You should configure ~/.ssh/config with:\nHost github.com\n    User git\n    Hostname github.com\n    PreferredAuthentications publickey\n    IdentityFile /home/__path__to__file__"
+        )
+        print(result)
+        answer = input("Do you want to continue anyway: [y/n]")
+        if not answer or answer[0].lower() != "y":
+            print("Exiting.")
+            exit(1)
 
     # webhook verification:
 
@@ -222,6 +352,17 @@ parser.add_option(
     help="print progress information",
     dest="progress",
 )
+
+parser.add_option(
+    "-g",
+    "--git-tag",
+    default=False,
+    action="store_true",
+    help="tag the release in git/github",
+    dest="git_tagging",
+)
+
+
 # The main 'dryrun' setting now applies to the following topics:
 # archive uploads to s3
 # files uploads to s3 for the website
@@ -278,20 +419,38 @@ boostVersion = args[0]
 dottedVersion = boostVersion.replace("_", ".")
 sourceRepo = "main/master/"
 if options.beta == None:
+    # Standard releases
     actualName = "boost_%s" % boostVersion
     hostedArchiveName = "boost_%s" % boostVersion
     unzippedArchiveName = "boost_%s" % boostVersion
     destRepo = "main/release/%s/source/" % dottedVersion
+    git_tag = f"boost-{dottedVersion}"
 else:
+    # Beta releases
     actualName = "boost_%s_b%d" % (boostVersion, options.beta)
     hostedArchiveName = "boost_%s_beta%d" % (boostVersion, options.beta)
     unzippedArchiveName = "boost_%s" % boostVersion
     destRepo = "main/beta/%s.beta%d/source/" % (dottedVersion, options.beta)
+    git_tag = f"boost-{dottedVersion}.beta{options.beta}"
 
 if options.rc != None:
     actualName += "_rc%d" % options.rc
     # hostedArchiveName
     # unzippedArchiveName
+    git_tag = f"{git_tag}.rc{options.rc}"
+    # or, does an rc get tagged?
+    git_tag = ""
+
+if options.git_tagging:
+    git_tags()
+else:
+    print(
+        "You did not run this script with the --git-tag option. Please be sure you have already tagged the release. In the future publish-release.py should switch --git-tag to --skip-git-tag and enable tagging by default."
+    )
+    answer = input("Do you want to continue anyway: [y/n]")
+    if not answer or answer[0].lower() != "y":
+        print("Exiting.")
+        exit(1)
 
 if options.progress:
     print("Creating release files named '%s'" % actualName)
