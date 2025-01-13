@@ -150,8 +150,17 @@ all_types="main antora cppalv1"
 cppalv1_types="not_currently_used skipping_this"
 
 if [ -z "$typeoption" ]; then
-    if [ -f "$BOOST_SRC_FOLDER/doc/build_antora.sh" ]; then
-        typeoption="antora"
+    # if [ -f "$BOOST_SRC_FOLDER/doc/build_antora.sh" ]; then
+    # if ls -1 "$BOOST_SRC_FOLDER/doc/" | grep -i antora > /dev/null; then
+    if find "$BOOST_SRC_FOLDER/doc/" -maxdepth 1 -name '*antora*' | grep . ; then
+        if [ -f "$BOOST_SRC_FOLDER/doc/Jamfile" ] || [ -f "$BOOST_SRC_FOLDER/doc/jamfile" ] || [ -f "$BOOST_SRC_FOLDER/doc/Jamfile.v2" ] || [ -f "$BOOST_SRC_FOLDER/doc/jamfile.v2" ] || [ -f "$BOOST_SRC_FOLDER/doc/Jamfile.v3" ] || [ -f "$BOOST_SRC_FOLDER/doc/jamfile.v3" ] || [ -f "$BOOST_SRC_FOLDER/doc/Jamfile.jam" ] || [ -f "$BOOST_SRC_FOLDER/doc/jamfile.jam" ] || [ -f "$BOOST_SRC_FOLDER/doc/build.jam" ] ; then
+            echo "doc/build_antora.sh or another doc/antora file exists however there is also a Jamfile. Ambiguous result. For the moment, prefer the Jamfile. Proceeding."
+            install_antora_deps="yes"
+            typeoption="main"
+        else
+            echo "build_antora.sh exists. Setting build type to antora."
+            typeoption="antora"
+        fi
     elif [[ " $cppalv1_types " =~ .*\ $REPONAME\ .* ]]; then
         # not used currently, but an example
         typeoption="cppalv1"
@@ -181,7 +190,7 @@ if [ "$skippackagesoption" != "yes" ]; then
 
     sudo apt-get install -y build-essential cmake curl default-jre-headless python3 python3-venv rsync unzip wget
 
-    if [ "$typeoption" = "antora" ]; then
+    if [ "$typeoption" = "antora" ] || [ "$install_antora_deps" = "yes" ]; then
 
         mkdir -p ~/.nvm_${REPONAME}_antora
         export NODE_VERSION=18.18.1
