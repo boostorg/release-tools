@@ -220,8 +220,17 @@ $cppalv1_types="not_currently_used skipping_this"
 
 if (! $typeoption ) {
 
-    if (Test-Path "$BOOST_SRC_FOLDER\doc\build_antora.sh") {
-        $typeoption="antora"
+    # if (Test-Path "$BOOST_SRC_FOLDER\doc\build_antora.sh") {
+    if ( Get-ChildItem -Path "$BOOST_SRC_FOLDER\doc\" "*antora*" ) {
+        if ( (Test-Path -Path $BOOST_SRC_FOLDER/doc/Jamfile) -or (Test-Path -Path $BOOST_SRC_FOLDER/doc/Jamfile.v2) -or (Test-Path -Path $BOOST_SRC_FOLDER/doc/Jamfile.v3) -or (Test-Path -Path $BOOST_SRC_FOLDER/doc/Jamfile.jam) -or (Test-Path -Path $BOOST_SRC_FOLDER/doc/build.jam)) {
+            Write-Output "doc/build_antora.sh or another doc/antora file exists however there is also a Jamfile. Ambiguous result. For the moment, prefer the Jamfile. Proceeding."
+            $install_antora_deps="yes"
+            $typeoption="main"
+        }
+        else {
+            Write-Output "build_antora.sh exists. Setting build type to antora."
+            $typeoption="antora"
+        }
     }
     elseif ($cppalv1_types.contains($REPONAME)) {
         $typeoption="cppalv1"
@@ -296,7 +305,7 @@ if ( -Not ${skip-packages} ) {
 
     refenv
 
-    if ($typeoption -eq "antora") {
+    if (($typeoption -eq "antora") -or ($install_antora_deps -eq "yes")) {
 
         if ( -Not (Get-Command clang++ -errorAction SilentlyContinue) )
         {
@@ -787,5 +796,5 @@ else {
 }
 
 Pop-Location
-echo "At the end of $scriptname"
+Write-Output "At the end of $scriptname"
 exit 0
