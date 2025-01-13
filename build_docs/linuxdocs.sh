@@ -325,7 +325,7 @@ if [ "$skipboostoption" = "yes" ] ; then
             mkdir -p $librarypath
             # running cp multiple times will fail to overwrite certain .git files
             # cp -r ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath} || true
-            rsync -av --exclude 'boost-root' $BOOST_SRC_FOLDER/ $librarypath
+            rsync -av --exclude 'boost-root' --delete $BOOST_SRC_FOLDER/ $librarypath
         fi
     fi
 else
@@ -351,7 +351,7 @@ else
         mkdir -p $librarypath
         # running cp multiple times will fail to overwrite certain .git files
         # cp -r ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath} || true
-        rsync -av --exclude 'boost-root' $BOOST_SRC_FOLDER/ $librarypath
+        rsync -av --exclude 'boost-root' --delete $BOOST_SRC_FOLDER/ $librarypath
     fi
 fi
 
