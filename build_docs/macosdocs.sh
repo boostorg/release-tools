@@ -48,7 +48,7 @@ export PATH="${homebrew_base_path}/opt/gnu-getopt/bin:$PATH"
 
 # READ IN COMMAND-LINE OPTIONS
 
-TEMP=`${homebrew_base_path}/opt/gnu-getopt/bin/getopt -o t:,h::,q:: --long type:,help::,skip-boost::,skip-packages::,quick::,boostrelease::,boostrootsubdir::,debug:: -- "$@"`
+TEMP=$(${homebrew_base_path}/opt/gnu-getopt/bin/getopt -o t:,h::,q:: --long type:,help::,skip-boost::,skip-packages::,quick::,boostrelease::,boostrootsubdir::,debug:: -- "$@")
 eval set -- "$TEMP"
 
 # extract options and their arguments into variables.
@@ -89,6 +89,7 @@ standard arguments:
         --skip-boost)
             skipboostoption="yes" ; shift 2 ;;
         --debug)
+            # shellcheck disable=SC2034
             debugoption="yes" ; set -x ; shift 2 ;;
         --skip-packages)
             skippackagesoption="yes" ; shift 2 ;;
@@ -108,7 +109,7 @@ done
 
 if [ -n "$1" ]; then
     echo "Library path set to $1. Changing to that directory."
-    cd $1
+    cd "$1"
 else
     workingdir=$(pwd)
     echo "Using current working directory ${workingdir}."
@@ -116,8 +117,11 @@ fi
 
 # DETERMINE REPOSITORY
 
-export REPONAME=$(basename -s .git `git config --get remote.origin.url` 2> /dev/null || echo "empty")
-export BOOST_SRC_FOLDER=$(git rev-parse --show-toplevel 2> /dev/null || echo "nofolder")
+# shellcheck disable=SC2046
+REPONAME=$(basename -s .git $(git config --get remote.origin.url) 2> /dev/null || echo "empty")
+export REPONAME
+BOOST_SRC_FOLDER=$(git rev-parse --show-toplevel 2> /dev/null || echo "nofolder")
+export BOOST_SRC_FOLDER
 
 # The purpose of this is to allow nvm/npm/node to use a subdirectory of the library in CI, so the job is self-contained
 # and doesn't use external directories.
@@ -126,7 +130,7 @@ if [ "${boostrootsubdiroption}" = "yes" ]; then
     export HOME=${BOOST_SRC_FOLDER}/tmp_home
 fi
 
-if [ "${REPONAME}" = "empty" -o "${REPONAME}" = "release-tools" ]; then
+if [ "${REPONAME}" = "empty" ] || [ "${REPONAME}" = "release-tools" ]; then
     echo -e "\nSet the path_to_library as the first command-line argument:\n\n$scriptname _path_to_library_\n\nOr change the working directory to that first.\n"
     exit 1
 else
@@ -136,22 +140,25 @@ fi
 # CHECK IF RUNNING IN BOOST-ROOT
 
 # this case applies to boostorg/more
-PARENTNAME=$(basename -s .git `git --git-dir ${BOOST_SRC_FOLDER}/../.git config --get remote.origin.url` 2> /dev/null || echo "not_found")
-if [ -n "${PARENTNAME}" -a "${PARENTNAME}" = "boost" ]; then
+# shellcheck disable=SC2046
+PARENTNAME=$(basename -s .git $(git --git-dir "${BOOST_SRC_FOLDER}"/../.git config --get remote.origin.url) 2> /dev/null || echo "not_found")
+if [ -n "${PARENTNAME}" ] && [ "${PARENTNAME}" = "boost" ]; then
     echo "Starting out inside boost-root."
     BOOSTROOTLIBRARY="yes"
     BOOSTROOTRELPATH=".."
 else
     # most libraries
-    PARENTNAME=$(basename -s .git `git --git-dir ${BOOST_SRC_FOLDER}/../../.git config --get remote.origin.url` 2> /dev/null || echo "not_found")
-    if [ -n "${PARENTNAME}" -a "${PARENTNAME}" = "boost" ]; then
+    # shellcheck disable=SC2046
+    PARENTNAME=$(basename -s .git $(git --git-dir "${BOOST_SRC_FOLDER}"/../../.git config --get remote.origin.url) 2> /dev/null || echo "not_found")
+    if [ -n "${PARENTNAME}" ] && [ "${PARENTNAME}" = "boost" ]; then
         echo "Starting out inside boost-root."
         BOOSTROOTLIBRARY="yes"
         BOOSTROOTRELPATH="../.."
     else
         # numerics
-        PARENTNAME=$(basename -s .git `git --git-dir ${BOOST_SRC_FOLDER}/../../../.git config --get remote.origin.url` 2> /dev/null || echo "not_found")
-        if [ -n "${PARENTNAME}" -a "${PARENTNAME}" = "boost" ]; then
+        # shellcheck disable=SC2046
+        PARENTNAME=$(basename -s .git $(git --git-dir "${BOOST_SRC_FOLDER}"/../../../.git config --get remote.origin.url) 2> /dev/null || echo "not_found")
+        if [ -n "${PARENTNAME}" ] && [ "${PARENTNAME}" = "boost" ]; then
             echo "Starting out inside boost-root."
             BOOSTROOTLIBRARY="yes"
             BOOSTROOTRELPATH="../../.."
@@ -207,7 +214,7 @@ echo '==================================> INSTALL'
 if [ "$skippackagesoption" != "yes" ]; then
 
     if [ "$typeoption" = "antora" ] || [ "$install_antora_deps" = "yes" ]; then
-        mkdir -p ~/.nvm_${REPONAME}_antora
+        mkdir -p ~/".nvm_${REPONAME}_antora"
         export NODE_VERSION=18.18.1
         # The container has a pre-installed nodejs. Overwrite those again.
         export NVM_BIN="$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/bin"
@@ -215,8 +222,11 @@ if [ "$skippackagesoption" != "yes" ]; then
         export NVM_INC=$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/include/node
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
         export NVM_DIR=$HOME/.nvm_${REPONAME}_antora
+        # shellcheck source=/dev/null
         . "$NVM_DIR/nvm.sh" && nvm install ${NODE_VERSION}
+        # shellcheck source=/dev/null
         . "$NVM_DIR/nvm.sh" && nvm use v${NODE_VERSION}
+        # shellcheck source=/dev/null
         . "$NVM_DIR/nvm.sh" && nvm alias default v${NODE_VERSION}
         export PATH="$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/bin/:${PATH}"
         node --version
@@ -228,10 +238,10 @@ if [ "$skippackagesoption" != "yes" ]; then
     brew install ruby
     sudo ln -s /opt/homebrew/opt/ruby/bin/ruby /usr/local/bin/ruby || true
     sudo ln -s /opt/homebrew/opt/ruby/bin/gem /usr/local/bin/gem || true
-    gem_bin_path=`gem environment gemdir`/bin
+    gem_bin_path=$(gem environment gemdir)/bin
     export PATH=${gem_bin_path}:$PATH
 
-    if grep $gem_bin_path ~/.zprofile; then
+    if grep "$gem_bin_path" ~/.zprofile; then
         echo ".zprofile already has gem path set"
         true
     else
@@ -251,16 +261,17 @@ if [ "$skippackagesoption" != "yes" ]; then
 
     if [ "$typeoption" = "main" ]; then
 
-        if [ ! -f ${pythonvirtenvpath}/bin/activate ]; then
-           python3 -m venv ${pythonvirtenvpath}
+        if [ ! -f "${pythonvirtenvpath}/bin/activate" ]; then
+            python3 -m venv "${pythonvirtenvpath}"
         fi
-        source ${pythonvirtenvpath}/bin/activate
+        # shellcheck source=/dev/null
+        source "${pythonvirtenvpath}/bin/activate"
 
 	brew install ghostscript
 	brew install texlive
         brew install graphviz
-        sudo gem install public_suffix --version 4.0.7               # 4.0.7 from 2022 still supports ruby 2.5. Continue to use until ~2024.
-        sudo gem install css_parser --version 1.12.0                 # 1.12.0 from 2022 still supports ruby 2.5. Continue to use until ~2024.
+        sudo gem install public_suffix --version 4.0.7  # 4.0.7 from 2022 still supports ruby 2.5. Continue to use until ~2024.
+        sudo gem install css_parser --version 1.12.0  # 1.12.0 from 2022 still supports ruby 2.5. Continue to use until ~2024.
         sudo gem install asciidoctor --version 2.0.17
         sudo gem install asciidoctor-pdf --version 2.3.4
         sudo gem install asciidoctor-diagram --version 2.2.14
@@ -292,7 +303,7 @@ if [ "$skippackagesoption" != "yes" ]; then
     # sudo port install libxslt docbook-xsl docbook-xml-4.2
 
     if [ "$typeoption" = "cppalv1" ] || [ "$typeoption" = "main" ]; then
-        cd $BOOST_SRC_FOLDER
+        cd "$BOOST_SRC_FOLDER"
         cd $BOOSTROOTRELPATH
         mkdir -p tmp && cd tmp
         if [ ! -f saxonhe.zip ]; then curl -s -S --retry 10 -L -o saxonhe.zip https://sourceforge.net/projects/saxon/files/Saxon-HE/9.9/SaxonHE9-9-1-4J.zip/download; fi
@@ -307,18 +318,20 @@ if [ "$skippackagesoption" != "yes" ]; then
 fi
 
 # In the above 'packages' section a python virtenv was created. Activate it, if that has not been done already.
-if [ -f ${pythonvirtenvpath}/bin/activate ]; then
-    source ${pythonvirtenvpath}/bin/activate
+if [ -f "${pythonvirtenvpath}/bin/activate" ]; then
+    # shellcheck source=/dev/null
+    source "${pythonvirtenvpath}/bin/activate"
 fi
 
 # In the above 'packages' section npm was installed. Activate it, if that has not been done already.
-if [ -d $HOME/.nvm_${REPONAME}_antora ]; then
+if [ -d "$HOME/.nvm_${REPONAME}_antora" ]; then
         export NODE_VERSION=18.18.1
         # The container has a pre-installed nodejs. Overwrite those again.
         export NVM_BIN="$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/bin"
         export NVM_DIR=$HOME/.nvm_${REPONAME}_antora
         export NVM_INC=$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/include/node
-        . "$NVM_DIR/nvm.sh" && nvm use v${NODE_VERSION}
+        # shellcheck source=/dev/null
+        . "$NVM_DIR/nvm.sh" && nvm use "v${NODE_VERSION}"
         export PATH="$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/bin/:${PATH}"
         node --version
         npm --version
@@ -327,11 +340,11 @@ fi
 # check this on apple silicon:
 export PATH="${homebrew_base_path}/opt/gnu-sed/libexec/gnubin:$PATH"
 
-cd $BOOST_SRC_FOLDER
+cd "$BOOST_SRC_FOLDER"
 
 getlibrarypath () {
     localreponame=$1
-    locallibrarypath=$(git config --file .gitmodules --get submodule.$localreponame.path) || locallibrarypath="libs/$localreponame"
+    locallibrarypath=$(git config --file .gitmodules --get "submodule.$localreponame.path") || locallibrarypath="libs/$localreponame"
     echo "$locallibrarypath"
     }
 
@@ -339,21 +352,23 @@ if [ "$skipboostoption" = "yes" ] ; then
     # skip-boost was set. A reduced set of actions.
     if [ "${BOOSTROOTLIBRARY}" = "yes" ]; then
         cd $BOOSTROOTRELPATH
-        export BOOST_ROOT=$(pwd)
-        librarypath=$(getlibrarypath $REPONAME)
+        BOOST_ROOT=$(pwd)
+        export BOOST_ROOT
+        librarypath=$(getlibrarypath "$REPONAME")
     else
-	cd $BOOSTROOTRELPATH
+        cd "$BOOSTROOTRELPATH"
         if [ ! -d boost-root ]; then
             echo "boost-root missing. Rerun this script without --skip-boost or --quick option."
             exit 1
         else
             cd boost-root
-            export BOOST_ROOT=$(pwd)
-            librarypath=$(getlibrarypath $REPONAME)
-            mkdir -p $librarypath
+            BOOST_ROOT=$(pwd)
+            export BOOST_ROOT
+            librarypath=$(getlibrarypath "$REPONAME")
+            mkdir -p "$librarypath"
             # running cp multiple times will fail to overwrite certain .git files
             # cp -r ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath} || true
-            rsync -av --exclude 'boost-root' --delete $BOOST_SRC_FOLDER/ $librarypath
+            rsync -av --exclude 'boost-root' --delete "$BOOST_SRC_FOLDER/" "$librarypath"
         fi
     fi
 else
@@ -362,8 +377,9 @@ else
         cd $BOOSTROOTRELPATH
         git checkout $BOOST_BRANCH
         git pull
-        export BOOST_ROOT=$(pwd)
-        librarypath=$(getlibrarypath $REPONAME)
+        BOOST_ROOT=$(pwd)
+        export BOOST_ROOT
+        librarypath=$(getlibrarypath "$REPONAME")
     else
         cd $BOOSTROOTRELPATH
         if [ ! -d boost-root ]; then
@@ -374,12 +390,13 @@ else
             git checkout $BOOST_BRANCH
             git pull
         fi
-        export BOOST_ROOT=$(pwd)
-        librarypath=$(getlibrarypath $REPONAME)
-        mkdir -p $librarypath
+        BOOST_ROOT=$(pwd)
+        export BOOST_ROOT
+        librarypath=$(getlibrarypath "$REPONAME")
+        mkdir -p "$librarypath"
         # running cp multiple times will fail to overwrite certain .git files
         # cp -r ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath} || true
-        rsync -av --exclude 'boost-root' --delete $BOOST_SRC_FOLDER/ $librarypath
+        rsync -av --exclude 'boost-root' --delete "$BOOST_SRC_FOLDER/" "$librarypath"
     fi
 fi
 
@@ -405,11 +422,11 @@ if [ "$skippackagesoption" != "yes" ]; then
     cd ..
 fi
 
-if [ -d ${BOOST_ROOT}/build/docbook-xsl/docbook-xsl-1.79.1 ]; then
+if [ -d "${BOOST_ROOT}/build/docbook-xsl/docbook-xsl-1.79.1" ]; then
     export DOCBOOK_XSL_DIR=${BOOST_ROOT}/build/docbook-xsl/docbook-xsl-1.79.1
 fi
 
-if [ -d ${BOOST_ROOT}/build/docbook-xml ]; then
+if [ -d "${BOOST_ROOT}/build/docbook-xml" ]; then
     export DOCBOOK_DTD_DIR=${BOOST_ROOT}/build/docbook-xml
 fi
 
@@ -431,7 +448,7 @@ if [ "$skipboostoption" != "yes" ] && [ "$typeoption" != "antora" ] ; then
         # recopy the library if it was overwritten.
         if [ ! "${BOOSTROOTLIBRARY}" = "yes" ]; then
             # cp -rf ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath}
-            rsync -av --exclude 'boost-root' --delete $BOOST_SRC_FOLDER/ $librarypath
+            rsync -av --exclude 'boost-root' --delete "$BOOST_SRC_FOLDER/" "$librarypath"
         fi
     fi
 
@@ -460,6 +477,7 @@ echo '==================================> COMPILE'
 # toolslist="auto_index bcp boostbook boostdep boost_install build check_build cmake docca inspect litre quickbook"
 toolslist=("auto_index" "bcp" "boostbook" "boostdep" "boost_install" "build" "check_build" "cmake" "docca" "inspect" "litre" "quickbook")
 
+# shellcheck disable=SC2076
 if [[ " ${toolslist[*]} " =~ " ${REPONAME} " ]] && [ "$boostrelease" = "//boostrelease" ]; then
     echo "The boost tools do not have a //boostrelease target in their Jamfile. Run the build without --boostrelease instead."
     exit 0
@@ -470,12 +488,12 @@ if [[ "$librarypath" =~ numeric ]] && [ "$boostrelease" = "//boostrelease" ]; th
     exit 0
 fi
 
-if [ ! -d $librarypath/doc ]; then
+if [ ! -d "$librarypath/doc" ]; then
     echo "doc/ folder is missing for this library. No need to compile. Exiting."
     exit 0
 fi
 
-if [ -f $librarypath/doc/build_antora.sh ] || [ -f $librarypath/doc/Jamfile ] || [ -f $librarypath/doc/jamfile ] || [ -f $librarypath/doc/Jamfile.v2 ] || [ -f $librarypath/doc/jamfile.v2 ] || [ -f $librarypath/doc/Jamfile.v3 ] || [ -f $librarypath/doc/jamfile.v3 ] || [ -f $librarypath/doc/Jamfile.jam ] || [ -f $librarypath/doc/jamfile.jam ] || [ -f $librarypath/doc/build.jam ] ; then
+if [ -f "$librarypath/doc/build_antora.sh" ] || [ -f "$librarypath/doc/Jamfile" ] || [ -f "$librarypath/doc/jamfile" ] || [ -f "$librarypath/doc/Jamfile.v2" ] || [ -f "$librarypath/doc/jamfile.v2" ] || [ -f "$librarypath/doc/Jamfile.v3" ] || [ -f "$librarypath/doc/jamfile.v3" ] || [ -f "$librarypath/doc/Jamfile.jam" ] || [ -f "$librarypath/doc/jamfile.jam" ] || [ -f "$librarypath/doc/build.jam" ] ; then
      : # ok
 else
     echo "doc/Jamfile or similar is missing for this library. No need to compile. Exiting."
@@ -485,7 +503,7 @@ fi
 if [ "$REPONAME" = "geometry" ]; then
     set -x
     echo "in the geometry exception. ./b2 $librarypath/doc/src/docutils/tools/doxygen_xml2qbk"
-    ./b2 $librarypath/doc/src/docutils/tools/doxygen_xml2qbk/
+    ./b2 "$librarypath/doc/src/docutils/tools/doxygen_xml2qbk/"
     echo "running pwd"
     pwd
     echo "Running find command"
@@ -505,7 +523,7 @@ if [ "$typeoption" = "main" ]; then
     ./b2 -q -d0 --build-dir=build --distdir=build/dist tools/quickbook cxxstd=11
     ./b2 -q -d0 --build-dir=build --distdir=build/dist tools/auto_index cxxstd=11
     echo "using quickbook : build/dist/bin/quickbook ; using auto-index : build/dist/bin/auto_index ; using docutils ; using doxygen ; using boostbook ; using asciidoctor ; using saxonhe ;" > tools/build/src/user-config.jam
-    ./b2 -j3 $librarypath/doc${boostrelease}
+    ./b2 -j3 "$librarypath/doc${boostrelease}"
 
 elif [ "$typeoption" = "antora" ]; then
     library_is_submodule=""
@@ -514,9 +532,9 @@ elif [ "$typeoption" = "antora" ]; then
         library_is_submodule="true"
         timestamp=$(date +%s)
         echo "Antora will not run on a git module. Copying to /tmp"
-        mkdir -p /tmp/builddocs-${timestamp}/${REPONAME}
-        cp -rp ${librarypath}/* /tmp/builddocs-${timestamp}/${REPONAME}/
-        cd /tmp/builddocs-${timestamp}/${REPONAME}/
+        mkdir -p "/tmp/builddocs-${timestamp}/${REPONAME}"
+        cp -rp "${librarypath}"/* "/tmp/builddocs-${timestamp}/${REPONAME}/"
+        cd "/tmp/builddocs-${timestamp}/${REPONAME}/"
         rm -f .git
         git init
         git config user.email "test@example.com"
@@ -525,7 +543,7 @@ elif [ "$typeoption" = "antora" ]; then
         git commit -m "initial commit"
         cd doc
     else
-        cd ${librarypath}/doc
+        cd "${librarypath}/doc"
     fi
     chmod 755 build_antora.sh
     ./build_antora.sh
@@ -536,13 +554,13 @@ elif [ "$typeoption" = "antora" ]; then
     fi
 
     if [ "$library_is_submodule" = "true" ]; then
-        mkdir -p ${BOOST_ROOT}/${librarypath}/doc/build/
-        cp -rp build/* ${BOOST_ROOT}/${librarypath}/doc/build/
+        mkdir -p "${BOOST_ROOT}/${librarypath}/doc/build/"
+        cp -rp build/* "${BOOST_ROOT}/${librarypath}/doc/build/"
     fi
 
 elif [ "$typeoption" = "cppalv1" ]; then
     echo "using doxygen ; using boostbook ; using saxonhe ;" > tools/build/src/user-config.jam
-    ./b2 $librarypath/doc${boostrelease} cxxstd=11
+    ./b2 "$librarypath/doc${boostrelease}" cxxstd=11
 fi
 
 if [ "$typeoption" = "antora" ]; then
