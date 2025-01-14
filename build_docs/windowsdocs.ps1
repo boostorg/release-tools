@@ -608,10 +608,9 @@ if ( -Not ${skip-boost} ) {
     git submodule update --init tools/build
     git submodule update --init tools/boostlook
 
-    if ($typeoption -eq "main") {
-        git submodule update --init tools/auto_index
-        python tools/boostdep/depinst/depinst.py ../tools/auto_index
-    }
+    git submodule update --init tools/auto_index
+    python tools/boostdep/depinst/depinst.py ../tools/quickbook
+    python tools/boostdep/depinst/depinst.py ../tools/auto_index
 
     # Recopy the library, if it was overwritten by the submodule updates that just occurred.
     if ( -Not ($BOOSTROOTLIBRARY -eq "yes") ) {
@@ -626,8 +625,6 @@ if ( -Not ${skip-boost} ) {
     $matcher='\.saxonhe_jar = \$(jar\[1\]) ;$'
     $replacer='.saxonhe_jar = $(jar[1]) ;  .saxonhe_jar = \"/usr/share/java/Saxon-HE.jar\" ;'
     sed -i "s~$matcher~$replacer~" tools/build/src/tools/saxonhe.jam
-
-    python tools/boostdep/depinst/depinst.py ../tools/quickbook
 
     Write-Output "Running bootstrap.bat"
     ./bootstrap.bat
