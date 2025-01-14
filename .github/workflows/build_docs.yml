@@ -35,6 +35,7 @@ jobs:
             packages: python-is-python3
             skiplist: auto_index geometry
             flags: --debug
+            lint: yes
           - os: ubuntu-latest
             container: ubuntu:22.04
             packages: python2
@@ -69,7 +70,18 @@ jobs:
     steps:
 
       - uses: actions/checkout@v4
-
+      - name: Install lint pre-reqs
+        if: ${{ matrix.lint == 'yes' }}
+        run: |
+          set -xe
+          apt-get update
+          apt-get install -y shellcheck
+      - name: Shellcheck
+        if: ${{ matrix.lint == 'yes' }}
+        run: |
+          set -xe
+          shellcheck build_docs/linuxdocs.sh
+          shellcheck build_docs/macosdocs.sh
       - name: docs
         run: |
             set -x
