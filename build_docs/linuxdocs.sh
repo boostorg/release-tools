@@ -413,7 +413,7 @@ if [ "$skipboostoption" != "yes" ] && [ "$typeoption" != "antora" ] ; then
 
     if [ "$typeoption" = "main" ]; then
         git submodule update --init tools/auto_index
-        python3 tools/boostdep/depinst/depinst.py ../tools/auto_index
+        python3 tools/boostdep/depinst/depinst.py --ignore ${REPONAME} -vv ../tools/auto_index
 
         # recopy the library if it was overwritten.
         if [ ! "${BOOSTROOTLIBRARY}" = "yes" ]; then
@@ -422,7 +422,7 @@ if [ "$skipboostoption" != "yes" ] && [ "$typeoption" != "antora" ] ; then
         fi
     fi
 
-    python3 tools/boostdep/depinst/depinst.py ../tools/quickbook
+    python3 tools/boostdep/depinst/depinst.py --ignore ${REPONAME} -vv ../tools/quickbook
     ./bootstrap.sh
     ./b2 headers
 
