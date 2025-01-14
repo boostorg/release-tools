@@ -567,24 +567,22 @@ class script(script_common):
 
         os.chdir(self.root_dir)
         for directoryname in glob.iglob("libs/*", recursive=False):
-            if (
-                os.path.isdir(directoryname)
-                and os.path.isfile(os.path.join(directoryname, "doc", "antora_docs.sh"))
+            if os.path.isdir(directoryname) and os.path.isfile(
+                os.path.join(directoryname, "doc", "antora_docs.sh")
             ):  # filter dirs
                 antora_libraries.append(directoryname)
 
         for antora_lib in antora_libraries:
             os.chdir(antora_lib)
             # for a submodule .git is a file pointing to the gitdir
-            if (not os.path.isfile(".git")):
+            if not os.path.isfile(".git"):
                 print("skipping library: %s, already a git repository" % antora_lib)
                 continue
 
             utils.check_call("rm", ".git")
             utils.check_call("git", "init")
             utils.check_call("git", "add", "doc")
-            utils.check_call("git", "commit", "-m", "\"dummy antora commit\"")
-
+            utils.check_call("git", "commit", "-m", '"dummy antora commit"')
 
         # Build the full docs, and all the submodule docs.
         os.chdir(os.path.join(self.root_dir, "doc"))
