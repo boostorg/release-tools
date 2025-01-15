@@ -609,8 +609,9 @@ if ( -Not ${skip-boost} ) {
     git submodule update --init tools/boostlook
 
     git submodule update --init tools/auto_index
-    python tools/boostdep/depinst/depinst.py ../tools/quickbook
-    python tools/boostdep/depinst/depinst.py ../tools/auto_index
+    # However, "--ignore $REPONAME" is not yet working.
+    python tools/boostdep/depinst/depinst.py --ignore $REPONAME ../tools/quickbook
+    python tools/boostdep/depinst/depinst.py --ignore $REPONAME ../tools/auto_index
 
     # Recopy the library, if it was overwritten by the submodule updates that just occurred.
     if ( -Not ($BOOSTROOTLIBRARY -eq "yes") ) {
