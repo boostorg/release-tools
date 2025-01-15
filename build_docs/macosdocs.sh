@@ -441,15 +441,29 @@ if [ "$skipboostoption" != "yes" ] && [ "$typeoption" != "antora" ] ; then
     git submodule update --init tools/build
     sed -i 's~GLOB "/usr/share/java/saxon/"~GLOB "/Library/Java/Extensions/" "/usr/share/java/saxon/"~' tools/build/src/tools/saxonhe.jam
 
-    if [ "$typeoption" = "main" ]; then
-        git submodule update --init tools/auto_index
-        python3 tools/boostdep/depinst/depinst.py ../tools/auto_index
+    # if [ "$typeoption" = "main" ]; then
+    #     git submodule update --init tools/auto_index
+    #     python3 tools/boostdep/depinst/depinst.py ../tools/auto_index
 
-        # recopy the library if it was overwritten.
-        if [ ! "${BOOSTROOTLIBRARY}" = "yes" ]; then
-            # cp -rf ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath}
-            rsync -av --exclude 'boost-root' --delete "$BOOST_SRC_FOLDER/" "$librarypath"
-        fi
+    #     # recopy the library if it was overwritten.
+    #     if [ ! "${BOOSTROOTLIBRARY}" = "yes" ]; then
+    #         # cp -rf ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath}
+    #         rsync -av --exclude 'boost-root' --delete "$BOOST_SRC_FOLDER/" "$librarypath"
+    #     fi
+    # fi
+
+    # Previously the logic had been to only install auto_index for "$typeoption" = "main"
+    # It's simpler to always install that.
+    # Also, --ignore is broken on depinst.py.
+
+    git submodule update --init tools/auto_index
+    python3 tools/boostdep/depinst/depinst.py --ignore "${REPONAME}" ../tools/auto_index
+    python3 tools/boostdep/depinst/depinst.py --ignore "${REPONAME}" ../tools/quickbook
+
+    # recopy the library if it was overwritten.
+    if [ ! "${BOOSTROOTLIBRARY}" = "yes" ]; then
+        # cp -rf ${BOOST_SRC_FOLDER}/!(boost-root) ${librarypath}
+        rsync -av --exclude 'boost-root' --delete "$BOOST_SRC_FOLDER/" "$librarypath"
     fi
 
     python3 tools/boostdep/depinst/depinst.py ../tools/quickbook
