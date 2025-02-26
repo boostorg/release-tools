@@ -555,7 +555,7 @@ class script(script_common):
                 os.path.join(self.build_dir, "docbook-xsl", "docbook-xsl-1.79.1"),
                 os.path.join(self.build_dir, "docbook-xml"),
             ),
-            "using asciidoctor ;",
+            "using asciidoctor : : asciidoctor-attribute=source-highlighter=highlight.js ;",
             "using saxonhe ;",
         )
 
