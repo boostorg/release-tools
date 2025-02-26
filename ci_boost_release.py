@@ -572,7 +572,9 @@ class script(script_common):
             ):  # filter dirs
                 antora_libraries.append(directoryname)
 
-        utils.check_call("git", "config", "--global", "user.email", "ci-bot@example.com")
+        utils.check_call(
+            "git", "config", "--global", "user.email", "ci-bot@example.com"
+        )
         utils.check_call("git", "config", "--global", "user.name", "ci-bot")
 
         for antora_lib in antora_libraries:
