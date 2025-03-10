@@ -481,7 +481,7 @@ parser.add_option(
 # JFrog goes offline.
 parser.add_option(
     "--dry-run-jfrog",
-    default=False,
+    default=True,
     action="store_true",
     help="don't upload release archives to JFrog",
     dest="dryrun_jfrog",
