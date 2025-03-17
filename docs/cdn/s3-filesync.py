@@ -75,7 +75,7 @@ for source_file_list in source_file_lists:
             if (
                 file
                 and re.match("^[a-zA-Z0-9_/.-]+$", file)
-                and not re.match("\.\.", file)
+                and not re.match(r"\.\.", file)
                 and not re.match("^/", file)
             ):
     
