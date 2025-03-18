@@ -543,7 +543,7 @@ class ci_circleci(object):
         return kargs
 
     def command_machine_post(self):
-        # Apt update for the pckages installs we'll do later.
+        # Apt update for the packages installs we'll do later.
         utils.check_call("sudo", "apt-get", "-qq", "update")
         # Need PyYAML to read Travis yaml in a later step.
         utils.check_call("pip", "install", "--user", "PyYAML")
