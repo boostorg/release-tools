@@ -115,6 +115,41 @@ else
     echo "Using current working directory ${workingdir}."
 fi
 
+function LocateCLCompiler {
+    # MrDocs requires a C++ compiler. Possibly other software will require a C++ compiler.
+    docsFolder=$1
+    startdir=$(pwd)
+    cd "$docsFolder"
+    clang_required="no"
+    if grep -r -i "mrdocs" . > /dev/null ; then
+        clang_required="yes"
+    fi
+    cd "${startdir}"
+
+    # Determine if a C++ compiler is available.
+    cl_available="no"
+    if command -v clang++ &> /dev/null
+    then
+        cl_available="yes"
+    fi
+    if command -v gcc &> /dev/null
+    then
+        cl_available="yes"
+    fi
+
+    if [ "${clang_required}" = "no" ] || [ "${cl_available}" = "yes" ]; then
+        # Success
+        true
+        return
+    else
+        echo "MrDocs was detected in the docs folder, however no clang compiler was found on the system. Please install a clang compiler (such as Xcode) and retry."
+        echo "It may be sufficient to run 'brew install gcc'."
+        echo "Please submit feedback if you believe this detection algorithm to be erroneous or if the function LocateCLCompiler can be improved."
+        echo "Exiting."
+        exit 1
+    fi
+}
+
 # DETERMINE REPOSITORY
 
 # shellcheck disable=SC2046
@@ -258,6 +293,13 @@ if [ "$skippackagesoption" != "yes" ]; then
     brew install gnu-sed
     brew install docbook
     brew install docbook-xsl
+    # zstd and cmake are required for mrdocs
+    brew install zstd
+    if ! command -v cmake &> /dev/null
+    then
+        echo "Installing cmake"
+        brew install cmake
+    fi
 
     if [ "$typeoption" = "main" ]; then
 
@@ -528,6 +570,12 @@ if [ "$REPONAME" = "geometry" ]; then
     echo "Running pip3 list"
     pip3 list
 fi
+
+# -----------------------------------
+
+# a preflight compiler check
+
+LocateCLCompiler "$librarypath/doc"
 
 # -----------------------------------
 

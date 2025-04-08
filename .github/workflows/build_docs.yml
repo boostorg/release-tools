@@ -222,6 +222,7 @@ jobs:
             macosdocs.sh
             cd ../..
 
+            # 2025-04 Retry this after upgrading the antora version in boostorg/url
             # Run at least one antora build that installs everything
             # cd libs/url
             # macosdocs.sh
@@ -289,6 +290,7 @@ jobs:
             flags: "-boostrelease"
             skiplist: contract hana log parameter parameter_python python url
           - os: windows-2022
+            lint: yes
             flags: "-boostrelease"
             skiplist: contract hana log parameter parameter_python python url
 
@@ -297,7 +299,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
+      - name: Install ScriptAnalyzer pre-reqs
+        if: ${{ matrix.lint == 'yes' }}
+        run: |
+          # is anything needed
+          $true
+      - name: ScriptAnalyzer
+        if: ${{ matrix.lint == 'yes' }}
+        run: |
+          Invoke-ScriptAnalyzer -EnableExit build_docs/windowsdocs.ps1
       - name: docs
         shell: powershell
         run: |
@@ -389,9 +399,9 @@ jobs:
             cd ../..
 
             # Run at least one antora build that installs everything
-            # cd libs/url
-            # Runwindowsdocs
-            # cd ../..
+            cd libs/url
+            Runwindowsdocs
+            cd ../..
 
             # For the rest --quick
             git submodule foreach 'powershell -command C:/scripts/cifunctions.ps1 $name'

@@ -22,7 +22,7 @@ $nvm_install_version="1.1.11"
 $node_version="20.17.0"
 $node_version_basic="20"
 
-Set-PSDebug -Trace 1
+# Set-PSDebug -Trace 1
 
 if ($help) {
 
@@ -49,6 +49,8 @@ standard arguments:
 "
 
 Write-Output $helpmessage
+# echo $helpmessage
+
 exit 0
 }
 if ($quick) { ${skip-boost} = $true ; ${skip-packages} = $true ; }
@@ -79,7 +81,7 @@ function refenv {
 
     # refreshenv might delete path entries. Return those to the path.
     $originalpath=$env:PATH
-    refreshenv
+    Update-SessionEnvironment
     $joinedpath="${originalpath};$env:PATH"
     $joinedpath=$joinedpath.replace(';;',';')
     $env:PATH = ($joinedpath -split ';' | Select-Object -Unique) -join ';'
@@ -128,6 +130,70 @@ function DownloadWithRetry([string] $url, [string] $downloadLocation, [int] $ret
                 throw $exception
             }
         }
+    }
+}
+
+function LocateCLCompiler([string] $docsFolder) {
+
+    # MrDocs requires a C++ compiler. Possibly other software will require a C++ compiler.
+    $startdir = Get-Location | Foreach-Object { $_.Path }
+    Set-Location $docsFolder
+    # Determine if a C++ compiler is needed.
+    $clang_required="no"
+    $ResultList = (Get-ChildItem -Exclude test*,.test*,windowsdocs.ps1 | Select-String -quiet "mrdocs")
+    foreach ($result in $ResultList){
+        if ($result -eq "True") {
+              # Write-Output $result
+              $clang_required="yes"
+        }
+    }
+    # Now we know if $clang_required
+    Set-Location $startdir
+
+    # Determine if a C++ compiler is available.
+    $TmpErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    get-command cl.exe *>$null
+    if ( $? -eq "True" ) {
+            # Debugging info:
+            # Write-Output "Found cl.exe"
+            $cl_available="yes"
+    }
+    else {
+            # Debugging info:
+            # Write-Output "cl.exe not found"
+            $cl_available="no"
+    }
+
+    if ($clang_required -eq "no" -Or $cl_available -eq "yes") {
+        # Success
+        $ErrorActionPreference = $TmpErrorActionPreference
+        return
+    }
+    else {
+    # Include other Launch-VsDevShell.ps1 locations in this list:
+    $cl_command_attempts = @('C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\Common7\\Tools\\Launch-VsDevShell.ps1',
+	                         'C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\Launch-VsDevShell.ps1')
+    foreach ($cl_command_attempt in $cl_command_attempts) {
+        & $cl_command_attempt -arch amd64
+        get-command cl.exe *>$null
+        if ( $? -eq "True" ) {
+            # Debugging info:
+            # Write-Output "Found cl.exe"
+            $cl_available="yes"
+            $ErrorActionPreference = $TmpErrorActionPreference
+            return
+        }
+        else {
+            # Debugging info:
+            # Write-Output "cl.exe not found"
+            $cl_available="no"
+        }
+    }
+    Write-Output "MrDocs requires a C++ compiler, however one couldn't be found. There is a script here in build_docs/other/windows-VS-2022-clang.ps1 that may be used to install Visual Studio. After that, run this script again. If you believe the compiler cl.exe is available, feel free to examine this function LocateCLCompiler() and submit bug fixes."
+    Write-Output "Exiting."
+    $ErrorActionPreference = $TmpErrorActionPreference
+    exit 1
     }
 }
 
@@ -695,6 +761,10 @@ if ("$REPONAME" -eq "geometry") {
     try { (Get-Command doxygen_xml2qbk.exe).Path }
     catch { Write-Output "couldn't find doxygen_xml2qbk.exe" }
 }
+
+# a preflight compiler check
+
+LocateCLCompiler("$librarypath/doc")
 
 # the main compilation:
 
