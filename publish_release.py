@@ -332,7 +332,7 @@ def preflight():
     # webhook verification:
     print("Checking admin login to boost.io")
     WEB_USER = os.getenv("WEB_USER", "marshall@idio.com")
-    WEB_PASSWORD = os.getenv("WEB_USER", "qqq")
+    WEB_PASSWORD = os.getenv("WEB_PASSWORD", "qqq")
     WEBSITE_URL = boost_websites[0]
     BASE_ADMIN = f"{WEBSITE_URL}/admin/"
     LOGIN = f"{BASE_ADMIN}login/"
@@ -394,7 +394,7 @@ def import_new_releases():
 
     for boost_website in boost_websites:
         WEB_USER = os.getenv("WEB_USER", "marshall@idio.com")
-        WEB_PASSWORD = os.getenv("WEB_USER", "qqq")
+        WEB_PASSWORD = os.getenv("WEB_PASSWORD", "qqq")
         BASE_ADMIN = f"{boost_website}/admin/"
         LOGIN = f"{BASE_ADMIN}login/"
         if options.beta == None and options.rc == None:
