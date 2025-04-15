@@ -330,93 +330,26 @@ class script(script_common):
         utils.check_call("xsltproc", "--version")
 
     def command_install(self):
+        # =======================================
+        # 2025 (and later). Notes about apt gem pip packages
+        # =======================================
+        #
+        # The last few years, packages have all been installed via the Dockerfile.
+        # That offers numerous benefits since everything is pre-installed
+        # at build time, and importantly it is a central location to manage versions.
+        # Avoid installing packages in these scripts.
+        # Refer to git history for earlier implementations.
+
+        # The following was in command_install(self):
+
         super(script, self).command_install()
-        # These dependencies are installed in the build dir
-        self.command_install_rapidxml()
-        self.command_install_docbook()
-        # Host dependencies
-        self.command_install_docutils()
-        self.command_install_sphinx()
-        self.command_install_asciidoctor()
-
-    def command_install_rapidxml(self):
-        os.chdir(self.build_dir)
-        # We use RapidXML for some doc building tools.
-        if not os.path.exists(os.path.join(self.build_dir, "rapidxml.zip")):
-            utils.check_call(
-                "wget",
-                "-O",
-                "rapidxml.zip",
-                "http://sourceforge.net/projects/rapidxml/files/latest/download",
-            )
-            utils.check_call("unzip", "-n", "-d", "rapidxml", "rapidxml.zip")
-
-    def command_install_docutils(self):
-        os.chdir(self.build_dir)
-        # Need docutils for building some docs.
-        utils.check_call("pip", "install", "--user", "docutils==0.12")
-        os.chdir(self.root_dir)
-
-    def command_install_sphinx(self):
-        os.chdir(self.build_dir)
-        # Need Sphinx for building some docs (ie boost python).
-        utils.make_file(
-            os.path.join(self.build_dir, "constraints.txt"), "Sphinx==1.5.6"
-        )
-        utils.check_call("pip", "install", "--user", "Sphinx==1.5.6")
-        utils.check_call("pip", "install", "--user", "sphinx-boost==0.0.3")
-        utils.check_call(
-            "pip",
-            "install",
-            "--user",
-            "-c",
-            os.path.join(self.build_dir, "constraints.txt"),
-            "git+https://github.com/rtfd/recommonmark@50be4978d7d91d0b8a69643c63450c8cd92d1212",
-        )
-        os.chdir(self.root_dir)
-
-    def command_install_docbook(self):
-        os.chdir(self.build_dir)
-        # Local DocBook schema and stylesheets.
-        if not os.path.exists(os.path.join(self.build_dir, "docbook-xml.zip")):
-            utils.check_call(
-                "wget",
-                "-O",
-                "docbook-xml.zip",
-                "http://www.docbook.org/xml/4.5/docbook-xml-4.5.zip",
-            )
-            utils.check_call("unzip", "-n", "-d", "docbook-xml", "docbook-xml.zip")
-        if not os.path.exists(os.path.join(self.build_dir, "docbook-xsl.zip")):
-            utils.check_call(
-                "wget",
-                "-O",
-                "docbook-xsl.zip",
-                "https://sourceforge.net/projects/docbook/files/docbook-xsl/1.79.1/docbook-xsl-1.79.1.zip/download",
-            )
-            utils.check_call("unzip", "-n", "-d", "docbook-xsl", "docbook-xsl.zip")
-
-    def command_install_asciidoctor(self):
-        os.chdir(self.build_dir)
-        if os.geteuid() != 0:
-            os.environ["GEM_HOME"] = os.path.join(self.build_dir, ".gems")
-            os.environ["PATH"] += os.pathsep + os.path.join(
-                self.build_dir, ".gems", "bin"
-            )
-        utils.check_call("gem", "install", "asciidoctor", "--version", "1.5.8")
-        utils.check_call("asciidoctor", "--version")
-        utils.check_call("gem", "install", "rouge")
-        if pythonversion == "2":
-            utils.check_call("gem", "install", "pygments.rb", "--version", "1.2.1")
-        else:
-            utils.check_call("gem", "install", "pygments.rb", "--version", "2.1.0")
-        utils.check_call("pip", "install", "--user", "Pygments==2.1")
-        utils.check_call(
-            "pip",
-            "install",
-            "--user",
-            "https://github.com/bfgroup/jam_pygments/archive/master.zip",
-        )
-        os.chdir(self.root_dir)
+        # # These dependencies are installed in the build dir
+        # self.command_install_rapidxml()
+        # self.command_install_docbook()
+        # # Host dependencies
+        # self.command_install_docutils()
+        # self.command_install_sphinx()
+        # self.command_install_asciidoctor()
 
     @staticmethod
     def parse_semver(s):
