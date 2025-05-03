@@ -456,7 +456,7 @@ class script(script_common):
         # * auto-index documentation tool.
         self.b2(
             "-q",
-            "-d0",
+            # "-d0",
             "--build-dir=%s" % (self.build_dir),
             "--distdir=%s" % (os.path.join(self.build_dir, "dist")),
             "tools/quickbook",
