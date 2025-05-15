@@ -288,6 +288,17 @@ def git_tags():
 def preflight():
     load_dotenv()
 
+    print(
+        "Testing /etc/mime.types. The file should exist and contain hpp, but please ensure it's a full copy from Linux."
+    )
+
+    with open("/etc/mime.types") as myfile:
+        if "hpp" in myfile.read():
+            print("/etc/mime.types ok")
+        else:
+            print("/etc/mime.types check failed")
+            exit(1)
+
     print("Test ssh to brorigin servers")
 
     SSH_USER = os.getenv("SSH_USER", "mclow")
