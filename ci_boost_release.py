@@ -500,10 +500,22 @@ class script(script_common):
 
         os.chdir(self.root_dir)
         for directoryname in glob.iglob("libs/*", recursive=False):
-            if os.path.isdir(directoryname) and os.path.isfile(
-                os.path.join(directoryname, "doc", "antora_docs.sh")
-            ):  # filter dirs
+            if os.path.isdir(directoryname) and (
+                os.path.isfile(os.path.join(directoryname, "doc", "antora_docs.sh"))
+                or os.path.isfile(os.path.join(directoryname, "doc", "build_antora.sh"))
+            ):
                 antora_libraries.append(directoryname)
+                if os.path.isfile(os.path.join(directoryname, "doc", "antora_docs.sh")):
+                    utils.check_call(
+                        "dos2unix", os.path.join(directoryname, "doc", "antora_docs.sh")
+                    )
+                if os.path.isfile(
+                    os.path.join(directoryname, "doc", "build_antora.sh")
+                ):
+                    utils.check_call(
+                        "dos2unix",
+                        os.path.join(directoryname, "doc", "build_antora.sh"),
+                    )
 
         utils.check_call(
             "git", "config", "--global", "user.email", "ci-bot@example.com"
@@ -511,6 +523,7 @@ class script(script_common):
         utils.check_call("git", "config", "--global", "user.name", "ci-bot")
 
         for antora_lib in antora_libraries:
+            os.chdir(self.root_dir)
             os.chdir(antora_lib)
             # for a submodule .git is a file pointing to the gitdir
             if not os.path.isfile(".git"):
