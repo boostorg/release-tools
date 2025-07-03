@@ -33,11 +33,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            container: cppalliance/boost_superproject_build:24.04-v1
+            container: cppalliance/boost_superproject_build:24.04-v3
             packages: htop
-          - os: ubuntu-latest
-            container: cppalliance/boost_superproject_build:22.04-v1
-            packages: htop
+            # - os: ubuntu-latest
+            #   container: cppalliance/boost_superproject_build:22.04-v1
+            #   packages: htop
 
     timeout-minutes: 720
     runs-on: ${{matrix.os}}
