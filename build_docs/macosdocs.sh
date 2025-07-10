@@ -108,10 +108,11 @@ done
 # here to an earlier part of the script:
 
 if [ -n "$1" ]; then
-    echo "Library path set to $1. Changing to that directory."
-    cd "$1"
+    workingdir="$1"
+    echo "Library path set to ${workingdir}. Changing to that directory."
+    cd "${workingdir}"
 else
-    workingdir=$(pwd)
+    workingdir="$(pwd)"
     echo "Using current working directory ${workingdir}."
 fi
 
@@ -209,7 +210,7 @@ fi
 # Generally, boostorg/release-tools treats all libraries the same, meaning it installs one set of packages and executes b2.
 # Therefore all libraries ought to build under 'main' and shouldn't need anything customized.
 
-all_types="main antora cppalv1"
+all_types="main antora cppalv1 asciidoctor"
 # cppalv1_types="json beast url http_proto socks_proto zlib"
 cppalv1_types="not_currently_used skipping_this"
 
@@ -230,13 +231,18 @@ if [ -z "$typeoption" ]; then
         typeoption="cppalv1"
     else
         typeoption="main"
+        
+        if find "${workingdir:?}" -type f \( -iname "*.adoc" -o -iname "*.asciidoc" \) -print 2>/dev/null | grep -q .; then
+            echo "Asciidoctor documentation detected. Setting build type to asciidoctor."
+            typeoption="asciidoctor"
+        fi
     fi
 fi
 
 echo "Build type is ${typeoption}."
 
 if [[ !  " $all_types " =~ .*\ $typeoption\ .* ]]; then
-    echo "Allowed types are currently 'main', 'antora' and 'cppalv1'. Not $typeoption. Please choose a different option. Exiting."
+    echo "Allowed types are currently 'main', 'antora', 'cppalv1' and 'asciidoctor'. Not $typeoption. Please choose a different option. Exiting."
     exit 1
 fi
 
@@ -623,6 +629,9 @@ elif [ "$typeoption" = "antora" ]; then
 elif [ "$typeoption" = "cppalv1" ]; then
     echo "using doxygen ; using boostbook ; using saxonhe ;" > tools/build/src/user-config.jam
     ./b2 "$librarypath/doc${boostrelease}" cxxstd=11
+elif [ "$typeoption" = "asciidoctor" ]; then
+    # For asciidoctor builds, run b2 with the asciidoctor source highlighter option
+    ./b2 "$librarypath/doc${boostrelease}" asciidoctor-attribute=source-highlighter=highlight.js
 fi
 
 if [ "$typeoption" = "antora" ]; then
