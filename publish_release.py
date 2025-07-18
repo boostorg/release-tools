@@ -53,7 +53,7 @@ boost_repo_url = "git@github.com:boostorg/boost.git"
 boost_branch = "master"
 
 # webhook settings:
-boost_websites = ["https://www.boost.io", "https://www.stage.boost.cppalliance.org"]
+boost_websites = ["https://www.boost.org", "https://www.stage.boost.org"]
 
 # defaults, used later
 stagingPath2 = ""
@@ -341,34 +341,35 @@ def preflight():
             exit(1)
 
     # webhook verification:
-    print("Checking admin login to boost.io")
-    WEB_USER = os.getenv("WEB_USER", "marshall@idio.com")
-    WEB_PASSWORD = os.getenv("WEB_PASSWORD", "qqq")
-    WEBSITE_URL = boost_websites[0]
-    BASE_ADMIN = f"{WEBSITE_URL}/admin/"
-    LOGIN = f"{BASE_ADMIN}login/"
+    for boost_website in boost_websites:
+        print(f"Checking admin login to {boost_website}")
+        WEB_USER = os.getenv("WEB_USER", "marshall@idio.com")
+        WEB_PASSWORD = os.getenv("WEB_PASSWORD", "qqq")
+        WEBSITE_URL = boost_website
+        BASE_ADMIN = f"{WEBSITE_URL}/admin/"
+        LOGIN = f"{BASE_ADMIN}login/"
 
-    session = requests.session()
-    # do a request just to get a csrftoken
-    response = session.get(LOGIN)
-    response.raise_for_status()
-    response = session.post(
-        LOGIN,
-        data={
-            "csrfmiddlewaretoken": session.cookies["csrftoken"],
-            "username": WEB_USER,
-            "password": WEB_PASSWORD,
-        },
-    )
-    response.raise_for_status()
-    if "errornote" in response.text:
-        print(
-            "An 'errornote' was found in the attempt to log into boost.io with your WEB_USER and WEB_PASSWORD. Review those values in the .env file, and try manually logging into the admin panel"
+        session = requests.session()
+        # do a request just to get a csrftoken
+        response = session.get(LOGIN)
+        response.raise_for_status()
+        response = session.post(
+            LOGIN,
+            data={
+                "csrfmiddlewaretoken": session.cookies["csrftoken"],
+                "username": WEB_USER,
+                "password": WEB_PASSWORD,
+            },
         )
-        answer = input("Do you want to continue anyway: [y/n]")
-        if not answer or answer[0].lower() != "y":
-            print("Exiting.")
-            exit(1)
+        response.raise_for_status()
+        if "errornote" in response.text:
+            print(
+                f"An 'errornote' was found in the attempt to log into {boost_website} with your WEB_USER and WEB_PASSWORD. Review those values in the .env file, and try manually logging into the admin panel"
+            )
+            answer = input("Do you want to continue anyway: [y/n]")
+            if not answer or answer[0].lower() != "y":
+                print("Exiting.")
+                exit(1)
 
 
 def import_new_releases():
