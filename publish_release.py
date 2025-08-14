@@ -411,7 +411,9 @@ def import_new_releases():
         LOGIN = f"{BASE_ADMIN}login/"
         if options.beta == None and options.rc == None:
             # Standard releases
-            NEW_RELEASE = f"{BASE_ADMIN}versions/version/release_tasks/"
+            NEW_RELEASE = f"{BASE_ADMIN}versions/version/new_versions/"
+            # "release_tasks" were more extensive. May be deprecated.
+            # NEW_RELEASE = f"{BASE_ADMIN}versions/version/release_tasks/"
         elif options.rc == None:
             # Betas
             NEW_RELEASE = f"{BASE_ADMIN}versions/version/new_versions/"
