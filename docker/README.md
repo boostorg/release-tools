@@ -14,5 +14,6 @@ Dockerfiles to generate the boost_superproject_build images.
 | docker/python3/noble/Dockerfile | Python3 on Noble | cppalliance/boost_superproject_build:24.04-v1 | 2024-10 |
 | docker/python3/noble/Dockerfile | Python3 on Noble | cppalliance/boost_superproject_build:24.04-v2 | 2024-11 Include few more package updates. used in Jenkins |
 | docker/python3/noble/Dockerfile | Python3 on Noble | cppalliance/boost_superproject_build:24.04-v3 | 2024-12 Update many pip/gem packages |
+| docker/python3/noble/Dockerfile | Python3 on Noble | cppalliance/boost_superproject_build:24.04-v4 | 2025-08 Upgrade Doxygen 1_12_0 -> 1_14_0 bugfix |
 
 See [technical-notes.md](technical-notes.md) for development details.  
