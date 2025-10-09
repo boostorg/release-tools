@@ -69,7 +69,7 @@ def fileHash(fileName):
     return sha256_hash.hexdigest()
 
 
-def genJSON(snapshotJSON, fileName, incomingSHA):
+def genJSON(snapshotJSON, fileName, incomingSHA, nodocs=False):
     global checksum_succeeded
     with open(snapshotJSON, "r") as f:
         snap = json.load(f)
@@ -79,7 +79,7 @@ def genJSON(snapshotJSON, fileName, incomingSHA):
     if "created" in snap:
         newJSON["created"] = snap["created"]
     newJSON["sha256"] = incomingSHA
-    if snap["sha256"] != incomingSHA:
+    if not nodocs and snap["sha256"] != incomingSHA:
         print("ERROR: Checksum failure for '%s'" % fileName)
         print("Recorded:	%s" % snap["sha256"])
         print("Calculated: %s" % incomingSHA)
@@ -90,9 +90,12 @@ def genJSON(snapshotJSON, fileName, incomingSHA):
 
 # Copied from https://stackoverflow.com/questions/16694907/download-large-file-in-python-with-requests
 def downloadAFile(url, destFile):
-    with requests.get(url, stream=True) as r:
-        with open(destFile, "wb") as f:
-            shutil.copyfileobj(r.raw, f)
+    if os.path.exists(destFile) and options.skip_redownloading:
+        print(f"{destFile} already present. Skipping the download.")
+    else:
+        with requests.get(url, stream=True) as r:
+            with open(destFile, "wb") as f:
+                shutil.copyfileobj(r.raw, f)
 
 
 def downloadJFROGFiles(sourceRepo, sourceFileName, destFileName, suffix):
@@ -118,8 +121,8 @@ def downloadFASTLYFiles(sourceFileName, destFileName, suffix):
     destFile = "%s%s" % (destFileName, suffix)
     jsonFile = "%s.json" % sourceFile
     print("Downloading: %s to %s" % (sourceFile, destFile))
-    print("Downloading: %s to %s" % (jsonFile, jsonFile))
     downloadAFile(fastlyURL + "master/" + sourceFile, destFile)
+    print("Downloading: %s to %s" % (jsonFile, jsonFile))
     downloadAFile(fastlyURL + "master/" + jsonFile, jsonFile)
 
 
@@ -298,6 +301,25 @@ def preflight():
         else:
             print("/etc/mime.types check failed")
             exit(1)
+
+    print("Searching for required executables.")
+    required_executables = [
+        "rclone",
+        "curl",
+        "7z",
+        "zip",
+        "gzip",
+        "bzip2",
+        "unzip",
+        "tar",
+    ]
+    for required_executable in required_executables:
+        if not shutil.which(required_executable):
+            print(f"{required_executable} is not installed. It may be needed later.")
+            answer = input("Do you want to continue anyway: [y/n]")
+            if not answer or answer[0].lower() != "y":
+                print("Exiting.")
+                exit(1)
 
     print("Test ssh to brorigin servers")
 
@@ -499,6 +521,22 @@ parser.add_option(
     dest="dryrun_jfrog",
 )
 
+parser.add_option(
+    "--skip-nodocs",
+    default=False,
+    action="store_true",
+    help="skip nodocs archives",
+    dest="skip_nodocs",
+)
+
+parser.add_option(
+    "--skip-redownloading",
+    default=False,
+    action="store_true",
+    help="skip redownloading archives during tests",
+    dest="skip_redownloading",
+)
+
 # Usually staging/ will be published.
 # This setting overrides a main 'dryrun'.
 parser.add_option(
@@ -535,6 +573,7 @@ if options.beta == None:
     hostedArchiveName = "boost_%s" % boostVersion
     unzippedArchiveName = "boost_%s" % boostVersion
     destRepo = "main/release/%s/source/" % dottedVersion
+    destRepoNoDocs = "main/release/%s/source-nodocs/" % dottedVersion
     git_tag = f"boost-{dottedVersion}"
 else:
     # Beta releases
@@ -542,6 +581,10 @@ else:
     hostedArchiveName = "boost_%s_beta%d" % (boostVersion, options.beta)
     unzippedArchiveName = "boost_%s" % boostVersion
     destRepo = "main/beta/%s.beta%d/source/" % (dottedVersion, options.beta)
+    destRepoNoDocs = "main/beta/%s.beta%d/source-nodocs/" % (
+        dottedVersion,
+        options.beta,
+    )
     git_tag = f"boost-{dottedVersion}.beta{options.beta}"
 
 if options.rc != None:
@@ -593,23 +636,77 @@ if not checksum_succeeded:
     exit(1)
 
 # Unzip an archive locally in ~/archives/tmp/ and move it to ~/archives/
-if not options.dryrun:
-    archiveDir = str(Path.home()) + "/archives"
-    archiveDirTmp = str(Path.home()) + "/archives/tmp"
-    archiveName = actualName + ".tar.gz"
-    Path(archiveDir).mkdir(parents=True, exist_ok=True)
-    if os.path.isdir(archiveDirTmp):
-        shutil.rmtree(archiveDirTmp)
-    Path(archiveDirTmp).mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(archiveName, archiveDirTmp + "/" + archiveName)
+archiveDir = str(Path.home()) + "/archives"
+archiveDirTmp = str(Path.home()) + "/archives/tmp"
+archiveName = actualName + ".tar.gz"
+Path(archiveDir).mkdir(parents=True, exist_ok=True)
+if os.path.isdir(archiveDirTmp):
+    shutil.rmtree(archiveDirTmp)
+Path(archiveDirTmp).mkdir(parents=True, exist_ok=True)
+shutil.copyfile(archiveName, archiveDirTmp + "/" + archiveName)
+origDir = os.getcwd()
+os.chdir(archiveDirTmp)
+os.system("tar -xvf %s" % (archiveName))
+os.chdir(archiveDir)
+if os.path.isdir(hostedArchiveName):
+    shutil.rmtree(hostedArchiveName)
+shutil.move(archiveDirTmp + "/" + unzippedArchiveName, hostedArchiveName)
+os.chdir(origDir)
+
+# Generate nodocs versions
+if not options.skip_nodocs:
+    print("Processing nodocs")
     origDir = os.getcwd()
-    os.chdir(archiveDirTmp)
-    os.system("tar -xvf %s" % (archiveName))
-    os.chdir(archiveDir)
-    if os.path.isdir(hostedArchiveName):
-        shutil.rmtree(hostedArchiveName)
-    shutil.move(archiveDirTmp + "/" + unzippedArchiveName, hostedArchiveName)
-    os.chdir(origDir)
+    # [".7z", ".zip", ".tar.bz2", ".tar.gz"]
+    unzip_method = {}
+    unzip_method[".7z"] = "7z x"
+    unzip_method[".zip"] = "unzip"
+    unzip_method[".tar.bz2"] = "tar -xvf"
+    unzip_method[".tar.gz"] = "tar -xvf"
+    zip_method = {}
+    zip_method[".7z"] = "7z a -bd -mx=7 -mmt2 -ms=on"
+    zip_method[".zip"] = "zip -qr -9"
+    zip_method[".tar.bz2"] = "tar -jcf"
+    zip_method[".tar.gz"] = "tar -zcf"
+
+    for s in suffixes:
+        os.chdir(origDir)
+        archiveName = actualName + s
+        archiveDirTmp = str(Path.home()) + f"/archives-nodocs/{s}"
+        if os.path.isdir(archiveDirTmp):
+            shutil.rmtree(archiveDirTmp)
+        Path(archiveDirTmp).mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(archiveName, archiveDirTmp + "/" + archiveName)
+        os.chdir(archiveDirTmp)
+        extraction_command = unzip_method[s]
+        print(f"Extracting {archiveName}")
+        os.system(f"{extraction_command} {archiveName}")
+        os.chdir(f"boost_{boostVersion}")
+        print(f"Removing doc/ directories")
+        os.system("rm -rf libs/*/doc libs/numeric/*/doc tools/*/doc doc/")
+        os.chdir("../")
+        if os.path.exists("../" + archiveName):
+            print(f"Removing {archiveName}")
+            os.remove("../" + archiveName)
+        compression_method = zip_method[s]
+        print(f"Compressing {archiveName}")
+        os.system(f"{compression_method} ../{archiveName} boost_{boostVersion}")
+        os.chdir("../")
+
+        # Create the JSON files
+        sourceFileName = actualName + s
+        jsonFileName = sourceFileName + ".json"
+        jsonSnapshotName = origDir + "/" + snapshotName + s + ".json"
+        if options.progress:
+            print("Writing JSON to: %s" % jsonFileName)
+        jsonData = genJSON(
+            jsonSnapshotName, sourceFileName, fileHash(sourceFileName), nodocs=True
+        )
+        with open(jsonFileName, "w", encoding="utf-8") as f:
+            json.dump(jsonData, f, ensure_ascii=False, indent=0)
+
+        os.chdir(origDir)
+
 
 # Upload the files to JFROG
 if options.progress:
@@ -644,7 +741,7 @@ archivePathLocal = str(Path.home()) + "/archives/" + hostedArchiveName + "/"
 if not shutil.which("rclone"):
     print("rclone is not installed. Instructions:")
     print(
-        "wget https://downloads.rclone.org/v1.64.0/rclone-v1.64.0-linux-amd64.deb; dpkg -i rclone-v1.64.0-linux-amd64.deb"
+        "wget https://downloads.rclone.org/rclone-current-linux-amd64.deb; dpkg -i rclone-current-linux-amd64.deb"
     )
 elif not Path(str(Path.home()) + "/.aws/credentials").is_file():
     print("AWS credentials are missing. Please add the file ~/.aws/credentials .")
@@ -669,6 +766,15 @@ if not options.dryrun:
     for s in suffixes:
         uploadS3File(actualName + s, destRepo)
         uploadS3File(actualName + s + ".json", destRepo)
+    if not options.skip_nodocs:
+        for s in suffixes:
+            uploadS3File(
+                str(Path.home()) + "/archives-nodocs/" + actualName + s, destRepoNoDocs
+            )
+            uploadS3File(
+                str(Path.home()) + "/archives-nodocs/" + actualName + s + ".json",
+                destRepoNoDocs,
+            )
 
 # Publish Windows .exe files from their location in staging/
 if options.force_staging or (not options.dryrun and not options.dryrun_staging):
@@ -692,6 +798,11 @@ if not options.dryrun:
     for s in suffixes:
         list_of_uploaded_files.append(destRepo + actualName + s)
         list_of_uploaded_files.append(destRepo + actualName + s + ".json")
+
+    if not options.skip_nodocs:
+        for s in suffixes:
+            list_of_uploaded_files.append(destRepoNoDocs + actualName + s)
+            list_of_uploaded_files.append(destRepoNoDocs + actualName + s + ".json")
 
     if stagingPath2:
         list_of_uploaded_files.append(stagingPath2)
@@ -733,4 +844,5 @@ if not options.dryrun:
             print("SSH FAILED")
             print(result)
 
-import_new_releases()
+if not options.dryrun:
+    import_new_releases()
