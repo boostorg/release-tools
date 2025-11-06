@@ -312,6 +312,9 @@ def preflight():
         "bzip2",
         "unzip",
         "tar",
+        "pigz",
+        "lbzip2",
+        "time",
     ]
     for required_executable in required_executables:
         if not shutil.which(required_executable):
@@ -637,7 +640,8 @@ for s in suffixes:
 if not checksum_succeeded:
     exit(1)
 
-# Unzip an archive locally in ~/archives/tmp/ and move it to ~/archives/
+print("Extracting one archive locally in ~/archives/")
+print("This is used for the web upload later.")
 archiveDir = str(Path.home()) + "/archives"
 archiveDirTmp = str(Path.home()) + "/archives/tmp"
 archiveName = actualName + ".tar.gz"
@@ -648,7 +652,7 @@ Path(archiveDirTmp).mkdir(parents=True, exist_ok=True)
 shutil.copyfile(archiveName, archiveDirTmp + "/" + archiveName)
 origDir = os.getcwd()
 os.chdir(archiveDirTmp)
-os.system("tar -xvf %s" % (archiveName))
+os.system("tar -xf %s" % (archiveName))
 os.chdir(archiveDir)
 if os.path.isdir(hostedArchiveName):
     shutil.rmtree(hostedArchiveName)
@@ -662,14 +666,21 @@ if not options.skip_nodocs:
     # [".7z", ".zip", ".tar.bz2", ".tar.gz"]
     unzip_method = {}
     unzip_method[".7z"] = "7z x"
-    unzip_method[".zip"] = "unzip"
-    unzip_method[".tar.bz2"] = "tar -xvf"
-    unzip_method[".tar.gz"] = "tar -xvf"
+    unzip_method[".zip"] = "unzip -q"
+    unzip_method[".tar.bz2"] = "tar -xf"
+    unzip_method[".tar.gz"] = "tar -xf"
     zip_method = {}
-    zip_method[".7z"] = "7z a -bd -mx=7 -mmt2 -ms=on"
+    zip_method[".7z"] = "7z a -bd -mx=7 -mmt8 -ms=on"
     zip_method[".zip"] = "zip -qr -9"
-    zip_method[".tar.bz2"] = "tar -jcf"
-    zip_method[".tar.gz"] = "tar -zcf"
+    # zip_method[".tar.bz2"] = "tar -jcf"
+    zip_method[".tar.bz2"] = "tar -cf"
+    # zip_method[".tar.gz"] = "tar -zcf"
+    zip_method[".tar.gz"] = "tar -cf"
+    zip_extra_flags = {}
+    zip_extra_flags[".7z"] = ""
+    zip_extra_flags[".zip"] = ""
+    zip_extra_flags[".tar.bz2"] = "--use-compress-program=lbzip2"
+    zip_extra_flags[".tar.gz"] = "--use-compress-program=pigz"
 
     for s in suffixes:
         os.chdir(origDir)
@@ -682,7 +693,15 @@ if not options.skip_nodocs:
         os.chdir(archiveDirTmp)
         extraction_command = unzip_method[s]
         print(f"Extracting {archiveName}")
-        os.system(f"{extraction_command} {archiveName}")
+        # os.system(f"{extraction_command} {archiveName}")
+        result = subprocess.run(
+            f"time -p {extraction_command} {archiveName}",
+            shell=True,
+            capture_output=True,
+            text=True,
+        )
+        print(result.stdout)
+        print(result.stderr)
         os.chdir(f"boost_{boostVersion}")
         print(f"Removing doc/ directories")
         os.system("rm -rf libs/*/doc libs/numeric/*/doc tools/*/doc doc/")
@@ -691,8 +710,17 @@ if not options.skip_nodocs:
             print(f"Removing {archiveName}")
             os.remove("../" + archiveName)
         compression_method = zip_method[s]
+        extra_flags = zip_extra_flags[s]
         print(f"Compressing {archiveName}")
-        os.system(f"{compression_method} ../{archiveName} boost_{boostVersion}")
+        # os.system(f"{compression_method} ../{archiveName} boost_{boostVersion}")
+        result = subprocess.run(
+            f"time -p {compression_method} ../{archiveName} boost_{boostVersion} {extra_flags}",
+            shell=True,
+            capture_output=True,
+            text=True,
+        )
+        print(result.stdout)
+        print(result.stderr)
         os.chdir("../")
 
         # Create the JSON files
@@ -718,13 +746,19 @@ if not options.dryrun_jfrog and not options.dryrun:
         copyJFROGFile(sourceRepo, snapshotName, destRepo, actualName, s)
         uploadJFROGFile(actualName + s + ".json", destRepo)
 
+##############################################################
+#
 # Upload extracted files to S3 for the website docs
+#
+##############################################################
+
 aws_profiles = {
     "production": "boost.org.v2",
     "stage": "stage.boost.org.v2",
-    "revsys": "boost.revsys.dev",
     "cppal-dev": "boost.org-cppal-dev-v2",
 }
+# before: "revsys": "boost.revsys.dev",
+
 aws_region = "us-east-2"
 
 # Create rclone config file
@@ -748,7 +782,7 @@ if not shutil.which("rclone"):
 elif not Path(str(Path.home()) + "/.aws/credentials").is_file():
     print("AWS credentials are missing. Please add the file ~/.aws/credentials .")
 else:
-    if not options.dryrun:
+    if not options.dryrun and options.rc == None:
         for profile, bucket in aws_profiles.items():
             # AWS cli method:
             # archivePathRemote="s3://" + bucket + "/archives/" + hostedArchiveName + "/"
