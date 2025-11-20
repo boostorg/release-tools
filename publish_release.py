@@ -69,6 +69,15 @@ def fileHash(fileName):
     return sha256_hash.hexdigest()
 
 
+def sleep(seconds):
+    for i in range(seconds):
+        try:
+            time.sleep(1)
+        except KeyboardInterrupt:
+            print("Oh! You have sent a Keyboard Interrupt! Continuing.")
+            break
+
+
 def genJSON(snapshotJSON, fileName, incomingSHA, nodocs=False):
     global checksum_succeeded
     with open(snapshotJSON, "r") as f:
@@ -283,6 +292,12 @@ def git_tags():
         print("git push submodules failed")
         print(result)
         exit(1)
+
+    sleep_seconds = 30
+    print(f"Waiting {sleep_seconds} seconds for git submodules to upload.")
+    print("Adjusts the length of time in the script if needed.")
+    print("You may exit from the sleep loop with a Ctrl-C.")
+    sleep(sleep_seconds)
 
     # function complete
     os.chdir(origDir)
