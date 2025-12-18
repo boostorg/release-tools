@@ -306,6 +306,25 @@ def git_tags():
 def preflight():
     load_dotenv()
 
+    result = subprocess.run("nproc", shell=True, text=True, capture_output=True)
+    if result.stdout:
+        cpus = int(result.stdout.strip())
+    else:
+        cpus = 0
+    if cpus > 0 and cpus < 3:
+        print(
+            f"The number of cpus detected was {cpus}. It is recommended\
+ to resize this machine."
+        )
+        print(
+            "admin-server.boost.cpp.al may be resized by going to the release-tools\
+ GitHub Actions page and manually triggering 'Resize Deployment Server'."
+        )
+        answer = input("Do you want to continue: [y/n]")
+        if not answer or answer[0].lower() != "y":
+            print("Exiting.")
+            exit(1)
+
     print(
         "Testing /etc/mime.types. The file should exist and contain hpp, but please ensure it's a full copy from Linux."
     )
