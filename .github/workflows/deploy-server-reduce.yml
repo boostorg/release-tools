@@ -1,0 +1,36 @@
+name: Resize (Reduce) Deployment Server
+
+# Reduce the size of the release-tools deployment server
+#
+# The other workflow file increases the instance size during
+# releases.
+#
+# This one reduces it again, each Sunday.
+#
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 1 * * 0"
+
+jobs:
+  scale-deploy-server:
+    runs-on: ubuntu-latest
+    container: amazon/aws-cli:2.32.19
+    name: Scale
+    env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.DEPLOY_AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.DEPLOY_AWS_SECRET_ACCESS_KEY }}
+    if: github.repository == 'boostorg/release-tools'
+    steps:
+      - name: Debug
+        run: |
+            set -xe
+            pwd
+            whoami
+            aws --version
+            echo "github.event_name is ${{ github.event_name }}"
+
+      - name: Resize Instance
+        run: |
+            aws ssm start-automation-execution --document-name "AWS-ResizeInstance" --document-version "\$DEFAULT" --parameters '{"InstanceId":["${{ secrets.DEPLOY_INSTANCE_ID }}"],"InstanceType":["t2.micro"],"SleepWait":["PT5S"]}' --region ${{ secrets.DEPLOY_REGION }}
