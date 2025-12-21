@@ -5,13 +5,13 @@ name: Resize (Reduce) Deployment Server
 # The other workflow file increases the instance size during
 # releases.
 #
-# This one reduces it again, each Sunday.
+# This one reduces it again, each Monday.
 #
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 1 * * 0"
+    - cron: "0 12 * * 1"
 
 jobs:
   scale-deploy-server:
