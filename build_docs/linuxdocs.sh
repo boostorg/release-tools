@@ -386,7 +386,7 @@ if [ "$skippackagesoption" != "yes" ]; then
         unzip -n -d docbook-xsl docbook-xsl.zip
     fi
     if [ ! -f docbook-xml.zip ]; then
-        wget -O docbook-xml.zip http://www.docbook.org/xml/4.5/docbook-xml-4.5.zip
+        wget -O docbook-xml.zip http://archive.docbook.org/xml/4.5/docbook-xml-4.5.zip
     fi
     if [ ! -d docbook-xml ]; then
         unzip -n -d docbook-xml docbook-xml.zip

@@ -646,7 +646,7 @@ if ( -Not ${skip-packages} ) {
         unzip -n -d docbook-xsl docbook-xsl.zip
     }
     if ( -Not (Test-Path -Path docbook-xml.zip) ) {
-        Invoke-WebRequest -O docbook-xml.zip http://www.docbook.org/xml/4.5/docbook-xml-4.5.zip
+        Invoke-WebRequest -O docbook-xml.zip http://archive.docbook.org/xml/4.5/docbook-xml-4.5.zip
     }
     if ( -Not (Test-Path -Path docbook-xml) ) {
         unzip -n -d docbook-xml docbook-xml.zip
