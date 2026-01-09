@@ -434,6 +434,7 @@ if ( -Not ${skip-packages} ) {
         choco install -y --no-progress graphviz
         gem install public_suffix --version 4.0.7               # 4.0.7 from 2022 still supports ruby 2.5. Continue to use until ~2024.
         gem install css_parser --version 1.12.0                 # 1.12.0 from 2022 still supports ruby 2.5. Continue to use until ~2024.
+        gem install afm --version 0.2.2
         gem install asciidoctor --version 2.0.17
         gem install asciidoctor-pdf --version 2.3.4
         gem install asciidoctor-diagram --version 2.2.14
