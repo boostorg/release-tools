@@ -32,9 +32,11 @@ RUN set -xe \
         git \
         graphviz \
         jq \
+        lbzip2 \
         libsaxonhe-java \
         openssh-client \
         openssl libssl-dev \
+        pigz \
         p7zip-full  \
         python-is-python3 \
         python3-pip \
@@ -76,7 +78,7 @@ RUN set -xe \
     && bundle install --gemfile=/tmp/build/Gemfile \
     && curl -s -S --retry 10 -L -o rapidxml.zip http://sourceforge.net/projects/rapidxml/files/latest/download \
     && unzip -n -d rapidxml rapidxml.zip \
-    && curl -s -S --retry 10 -L -o docbook-xml.zip http://www.docbook.org/xml/4.5/docbook-xml-4.5.zip \
+    && curl -s -S --retry 10 -L -o docbook-xml.zip http://archive.docbook.org/xml/4.5/docbook-xml-4.5.zip \
     && unzip -n -d docbook-xml docbook-xml.zip \
     && curl -s -S --retry 10 -L -o docbook-xsl.zip https://sourceforge.net/projects/docbook/files/docbook-xsl/1.79.1/docbook-xsl-1.79.1.zip/download \
     && unzip -n -d docbook-xsl docbook-xsl.zip \
