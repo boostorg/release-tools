@@ -703,9 +703,10 @@ class script(script_common):
             packages.append(
                 parallel_call(
                     "tar",
+                    "--use-compress-program=pigz",
                     "--exclude=ci_boost_common.py",
                     "--exclude=ci_boost_release.py",
-                    "-zcf",
+                    "-cf",
                     "%s%s.tar.gz" % (self.boost_release_name, self.archive_tag),
                     self.boost_release_name,
                 )
@@ -716,9 +717,10 @@ class script(script_common):
             packages.append(
                 parallel_call(
                     "tar",
+                    "--use-compress-program=lbzip2",
                     "--exclude=ci_boost_common.py",
                     "--exclude=ci_boost_release.py",
-                    "-jcf",
+                    "-cf",
                     "%s%s.tar.bz2" % (self.boost_release_name, self.archive_tag),
                     self.boost_release_name,
                 )
@@ -751,7 +753,7 @@ class script(script_common):
                     "a",
                     "-bd",
                     "-mx=7",
-                    "-mmt2",
+                    "-mmt8",
                     "-ms=on",
                     "-x!" + self.boost_release_name + "/ci_boost_common.py",
                     "-x!" + self.boost_release_name + "/ci_boost_release.py",
