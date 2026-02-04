@@ -217,8 +217,9 @@ if [ "$skippackagesoption" != "yes" ]; then
         node --version
         npm --version
         npm install gulp-cli@2.3.0
-        npm install @mermaid-js/mermaid-cli@10.5.1
-
+        if grep -r mermaid "$BOOST_SRC_FOLDER/doc/"; then
+            npm install @mermaid-js/mermaid-cli@10.5.1
+        fi
 
     fi
     if [ "$typeoption" = "cppalv1" ]; then

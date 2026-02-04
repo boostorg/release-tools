@@ -417,7 +417,11 @@ if ( -Not ${skip-packages} ) {
         }
 
         npm install gulp-cli@2.3.0
-        npm install @mermaid-js/mermaid-cli@10.5.1
+
+        # need to check this code:
+        if (Get-ChildItem -Path "$BOOST_SRC_FOLDER/doc/" -Recurse -File | Select-String -Pattern "mermaid" -Quiet) {
+            npm install @mermaid-js/mermaid-cli@10.5.1
+        }
 
     }
 
