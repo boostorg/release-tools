@@ -224,9 +224,13 @@ if [ "$skippackagesoption" != "yes" ]; then
         export PATH="$NVM_DIR/versions/node/v${NODE_VERSION}/bin/:${PATH}"
         node --version
         npm --version
-        npm install gulp-cli@2.3.0
-        if grep -r mermaid "$BOOST_SRC_FOLDER/doc/"; then
-            npm install @mermaid-js/mermaid-cli@10.5.1
+        if ! which gulp; then
+            npm install -g gulp-cli@2.3.0
+        fi
+        if ! which mmdc; then
+            if grep -r mermaid "$BOOST_SRC_FOLDER/doc/"; then
+                npm install -g @mermaid-js/mermaid-cli@10.5.1
+            fi
         fi
 
     fi
