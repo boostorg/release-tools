@@ -249,12 +249,21 @@ echo '==================================> INSTALL'
 if [ "$skippackagesoption" != "yes" ]; then
 
     if [ "$typeoption" = "antora" ] || [ "$install_antora_deps" = "yes" ]; then
-        mkdir -p ~/".nvm_${REPONAME}_antora"
+        # A shared nvm installation potentially exists in /opt/nvm
+        # and it saves disk space and downloads.
+
+        if [ -d "/opt/nvm" ]; then
+            export NVM_DIR=/opt/nvm
+            echo "Use shared nvm installation"
+        else
+            export NVM_DIR=$HOME/.nvm_${REPONAME}_antora
+            echo "Use home dir nvm installation"
+        fi
+        mkdir -p "$NVM_DIR"
         export NODE_VERSION=18.18.1
         # The container has a pre-installed nodejs. Overwrite those again.
-        export NVM_BIN="$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/bin"
-        export NVM_DIR=$HOME/.nvm_${REPONAME}_antora
-        export NVM_INC=$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/include/node
+        export NVM_BIN="$NVM_DIR/versions/node/v${NODE_VERSION}/bin"
+        export NVM_INC=$NVM_DIR/versions/node/v${NODE_VERSION}/include/node
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
         export NVM_DIR=$HOME/.nvm_${REPONAME}_antora
         # shellcheck source=/dev/null
@@ -266,9 +275,13 @@ if [ "$skippackagesoption" != "yes" ]; then
         export PATH="$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/bin/:${PATH}"
         node --version
         npm --version
-        npm install gulp-cli@2.3.0
-        if grep -r mermaid "$BOOST_SRC_FOLDER/doc/"; then
-            npm install @mermaid-js/mermaid-cli@10.5.1
+        if ! which gulp; then
+            npm install -g gulp-cli@2.3.0
+        fi
+        if ! which mmdc; then
+            if grep -r mermaid "$BOOST_SRC_FOLDER/doc/"; then
+                npm install -g @mermaid-js/mermaid-cli@10.5.1
+            fi
         fi
     fi
 
@@ -321,7 +334,7 @@ if [ "$skippackagesoption" != "yes" ]; then
         sudo gem install asciidoctor-pdf --version 2.3.4
         sudo gem install asciidoctor-diagram --version 2.2.14
         sudo gem install asciidoctor-multipage --version 0.0.18
-        pip3 install setuptools
+        pip3 install setuptools==75.6.0
         pip3 install docutils
         # which library is using rapidxml
         # wget -O rapidxml.zip http://sourceforge.net/projects/rapidxml/files/latest/download
@@ -369,15 +382,21 @@ if [ -f "${pythonvirtenvpath}/bin/activate" ]; then
 fi
 
 # In the above 'packages' section npm was installed. Activate it, if that has not been done already.
-if [ -d "$HOME/.nvm_${REPONAME}_antora" ]; then
+if [ -d "/opt/nvm" ]; then
+    export NVM_DIR=/opt/nvm
+    echo "Use shared nvm installation"
+else
+    export NVM_DIR=$HOME/.nvm_${REPONAME}_antora
+    echo "Use home dir nvm installation"
+fi
+if [ -d "$NVM_DIR" ]; then
         export NODE_VERSION=18.18.1
         # The container has a pre-installed nodejs. Overwrite those again.
-        export NVM_BIN="$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/bin"
-        export NVM_DIR=$HOME/.nvm_${REPONAME}_antora
-        export NVM_INC=$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/include/node
+        export NVM_BIN="$NVM_DIR/versions/node/v${NODE_VERSION}/bin"
+        export NVM_INC=$NVM_DIR/versions/node/v${NODE_VERSION}/include/node
         # shellcheck source=/dev/null
         . "$NVM_DIR/nvm.sh" && nvm use "v${NODE_VERSION}"
-        export PATH="$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/bin/:${PATH}"
+        export PATH="$NVM_DIR/versions/node/v${NODE_VERSION}/bin/:${PATH}"
         node --version
         npm --version
 fi

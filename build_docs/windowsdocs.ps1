@@ -455,6 +455,7 @@ if ( -Not ${skip-packages} ) {
         gem install pygments.rb --version 2.3.0
         pip3 install Pygments==2.13.0
         gem install rouge --version 4.0.0
+        pip3 install setuptools==75.6.0
         pip3 install Sphinx==5.2.1
         pip3 install --user git+https://github.com/pfultz2/sphinx-boost@8ad7d424c6b613864976546d801439c34a27e3f6
 	# from dockerfile:

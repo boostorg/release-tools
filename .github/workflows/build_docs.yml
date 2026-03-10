@@ -20,6 +20,9 @@ on:
       - develop
       - feature/**
 
+env:
+  NODEJS_LIBRARIES: "decimal redis unordered url"
+
 jobs:
   linux:
     defaults:
@@ -113,10 +116,10 @@ jobs:
             linuxdocs.sh ${{ matrix.flags }}
             cd ../..
 
-            # Run at least one antora build that installs everything
-            cd libs/url
-            linuxdocs.sh ${{ matrix.flags }}
-            cd ../..
+            # # Run at least one antora build that installs everything
+            # cd libs/url
+            # linuxdocs.sh ${{ matrix.flags }}
+            # cd ../..
 
             textpart1='#!/bin/bash
             reponame=$1
@@ -133,6 +136,11 @@ jobs:
                echo "skipping ahead X letters"
             elif [[ "$skiplist" =~ $reponame ]]; then
                 echo "repo in skiplist"
+            elif [[ "$NODEJS_LIBRARIES" =~ $reponame ]]; then
+                # The antora submodule problem. We would need to
+                # run git init. Skipping for now.
+                true
+                # linuxdocs.sh --skip-boost
             else
                 linuxdocs.sh --quick '
 
@@ -243,6 +251,11 @@ jobs:
                echo "skipping ahead X letters"
             elif [[ "$skiplist" =~ $reponame ]]; then
                 echo "repo in skiplist"
+            elif [[ "$NODEJS_LIBRARIES" =~ $reponame ]]; then
+                # The antora submodule problem. We would need to
+                # run git init. Skipping for now.
+                true
+                # macosdocs.sh --skip-boost
             else
                 macosdocs.sh --quick '
 
@@ -358,6 +371,12 @@ jobs:
             elseif ($skiplist -like "*$reponame*") {
                 echo "repo in skiplist"
                 }
+            elseif ($NODEJS_LIBRARIES -like "*$reponame*") {
+                # The antora submodule problem. We would need to
+                # run git init. Skipping for now.
+                $true
+                # windowsdocs.ps1 -skip-boost
+                }
             else {
                 windowsdocs.ps1 -quick 
             '@
@@ -415,5 +434,3 @@ jobs:
             if ( $failed -ne '0' ) {
                 exit 1
              }
-
-
