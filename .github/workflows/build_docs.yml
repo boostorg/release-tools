@@ -45,11 +45,6 @@ jobs:
             skiplist: auto_index geometry url
             flags: --debug
           - os: ubuntu-latest
-            container: ubuntu:20.04
-            packages: python
-            skiplist: auto_index geometry url
-            flags: --debug
-          - os: ubuntu-latest
             container: ubuntu:24.04
             packages: python-is-python3
             skiplist: geometry url
@@ -59,12 +54,6 @@ jobs:
             packages: python2
             skiplist: geometry url
             flags: --debug --boostrelease
-          - os: ubuntu-latest
-            container: ubuntu:20.04
-            packages: python
-            skiplist: geometry url
-            flags: --debug --boostrelease
-            # Jinja 3.1.0 and later have dropped support for Python 3.6 and therefore won't run on Ubuntu 18.04. Removing tests for Ubuntu 18.
 
     timeout-minutes: 720
     runs-on: ${{matrix.os}}
@@ -182,21 +171,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - os: macos-11
-          #   skiplist: auto_index contract
-          # - os: macos-11
-          #   skiplist: contract
-          #   flags: --debug --boostrelease
-          - os: macos-12
+          - os: macos-14
             skiplist: auto_index contract geometry url
             flags: --debug
-          - os: macos-12
+          - os: macos-14
             skiplist: contract geometry url
             flags: --debug --boostrelease
-          - os: macos-14
+          - os: macos-15
             skiplist: auto_index contract geometry url
             flags: --debug
-          - os: macos-14
+          - os: macos-15
             skiplist: contract geometry url
             flags: --debug --boostrelease
 
@@ -295,14 +279,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-2019
-            skiplist: auto_index contract hana leaf log parameter parameter_python python qvm url
           - os: windows-2022
             skiplist: auto_index contract hana log parameter parameter_python python url
-          - os: windows-2019
+          - os: windows-2025
+            skiplist: auto_index contract hana log parameter parameter_python python url
+          - os: windows-2022
+            lint: yes
             flags: "-boostrelease"
             skiplist: contract hana log parameter parameter_python python url
-          - os: windows-2022
+          - os: windows-2025
             lint: yes
             flags: "-boostrelease"
             skiplist: contract hana log parameter parameter_python python url
@@ -371,7 +356,7 @@ jobs:
             elseif ($skiplist -like "*$reponame*") {
                 echo "repo in skiplist"
                 }
-            elseif ($NODEJS_LIBRARIES -like "*$reponame*") {
+            elseif ($env:NODEJS_LIBRARIES -like "*$reponame*") {
                 # The antora submodule problem. We would need to
                 # run git init. Skipping for now.
                 $true
