@@ -22,6 +22,37 @@ $nvm_install_version="1.1.11"
 $node_version="20.17.0"
 $node_version_basic="20"
 
+$requirements_txt = @"
+Jinja2==3.1.4
+MarkupSafe==3.0.2
+Pygments==2.18.0
+Sphinx==5.2.1
+docutils==0.19
+future==1.0.0
+git+https://github.com/pfultz2/sphinx-boost@8ad7d424c6b613864976546d801439c34a27e3f6
+https://github.com/bfgroup/jam_pygments/archive/master.zip
+myst-parser==0.18.1
+setuptools==75.6.0
+six==1.17.0
+"@
+
+$gemfile = @"
+source 'http://rubygems.org'
+gem 'asciidoctor',' 2.0.23'
+gem 'asciidoctor-diagram', '2.3.1'
+gem 'asciidoctor-multipage', '0.0.19'
+gem 'rouge', '4.5.1'
+gem 'pygments.rb', '3.0.0'
+"@
+
+$gemfile_local = @"
+source 'http://rubygems.org'
+gem 'public_suffix', '4.0.7'
+gem 'css_parser', '1.12.0'
+gem 'afm', '0.2.2'
+gem 'asciidoctor-pdf', '2.3.4'
+"@
+
 # Set-PSDebug -Trace 1
 
 if ($help) {
@@ -436,31 +467,22 @@ if ( -Not ${skip-packages} ) {
         choco install -y --no-progress ghostscript --version $ghostversion
         choco install -y --no-progress texlive
         choco install -y --no-progress graphviz
-        gem install public_suffix --version 4.0.7               # 4.0.7 from 2022 still supports ruby 2.5. Continue to use until ~2024.
-        gem install css_parser --version 1.12.0                 # 1.12.0 from 2022 still supports ruby 2.5. Continue to use until ~2024.
-        gem install afm --version 0.2.2
-        gem install asciidoctor --version 2.0.17
-        gem install asciidoctor-pdf --version 2.3.4
-        gem install asciidoctor-diagram --version 2.2.14
-        gem install asciidoctor-multipage --version 0.0.18
-        pip3 install docutils
-        ## Invoke-WebRequest -O rapidxml.zip http://sourceforge.net/projects/rapidxml/files/latest/download
-        # Invoke-WebRequest -O rapidxml.zip https://downloads.sourceforge.net/project/rapidxml/rapidxml/rapidxml%201.13/rapidxml-1.13.zip
-        # unzip -n -d rapidxml rapidxml.zip
-        #
-        # pip3 had been using --user. what will happen without.
-        pip3 install https://github.com/bfgroup/jam_pygments/archive/master.zip
-        pip3 install Jinja2==3.1.2
-        pip3 install MarkupSafe==2.1.1
-        gem install pygments.rb --version 2.3.0
-        pip3 install Pygments==2.13.0
-        gem install rouge --version 4.0.0
-        pip3 install Sphinx==5.2.1
-        pip3 install --user git+https://github.com/pfultz2/sphinx-boost@8ad7d424c6b613864976546d801439c34a27e3f6
-	# from dockerfile:
-        pip3 install myst-parser==0.18.1
-        pip3 install future==0.18.2
-        pip3 install six==1.14.0
+
+        # Install pip packages
+        New-Item -ItemType Directory -Force -Path ${HOME}/tmp/build_docs | Out-Null
+        $requirements_txt | Set-Content ${HOME}/tmp/build_docs/requirements.txt
+        pip3 install -r ${HOME}/tmp/build_docs/requirements.txt
+        Remove-Item ${HOME}/tmp/build_docs/requirements.txt
+
+        # Install ruby gems
+        gem install bundler
+        $gemfile | Set-Content ${HOME}/tmp/build_docs/Gemfile
+        $env:BUNDLE_GEMFILE="${HOME}/tmp/build_docs/Gemfile"
+        bundle install
+        $gemfile_local | Set-Content ${HOME}/tmp/build_docs/Gemfile
+        $env:BUNDLE_GEMFILE="${HOME}/tmp/build_docs/Gemfile"
+        bundle install
+        Remove-Item ${HOME}/tmp/build_docs/Gemfile
 
         refenv
 

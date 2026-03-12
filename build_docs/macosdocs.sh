@@ -24,6 +24,43 @@ boostrelease=""
 BOOSTROOTRELPATH=".."
 pythonvirtenvpath="${HOME}/venvboostdocs"
 
+requirements_txt="
+Jinja2==3.1.4
+MarkupSafe==3.0.2
+Pygments==2.18.0
+Sphinx==5.2.1
+docutils==0.19
+future==1.0.0
+git+https://github.com/pfultz2/sphinx-boost@8ad7d424c6b613864976546d801439c34a27e3f6
+https://github.com/bfgroup/jam_pygments/archive/master.zip
+myst-parser==0.18.1
+setuptools==75.6.0
+six==1.17.0
+"
+
+gemfile="
+source 'http://rubygems.org'
+gem 'asciidoctor',' 2.0.23'
+gem 'asciidoctor-diagram', '2.3.1'
+gem 'asciidoctor-multipage', '0.0.19'
+gem 'rouge', '4.5.1'
+gem 'pygments.rb', '3.0.0'
+"
+
+# Are there some gems we are installing in build_docs which aren't installed in release-tools?
+# Keep them in gemfile_local
+#
+# Earlier notes about public_suffix and css_parser:
+# # 1.12.0 from 2022 still supports ruby 2.5. Continue to use until ~2024.
+# So maybe this can be removed soon.
+gemfile_local="
+source 'http://rubygems.org'
+gem 'public_suffix', '4.0.7'
+gem 'css_parser', '1.12.0'
+gem 'afm', '0.2.2'
+gem 'asciidoctor-pdf', '2.3.4'
+"
+
 # git and getopt are required. If they are not installed, moving that part of the installation process
 # to an earlier part of the script:
 if ! command -v brew &> /dev/null
@@ -249,12 +286,21 @@ echo '==================================> INSTALL'
 if [ "$skippackagesoption" != "yes" ]; then
 
     if [ "$typeoption" = "antora" ] || [ "$install_antora_deps" = "yes" ]; then
-        mkdir -p ~/".nvm_${REPONAME}_antora"
+        # A shared nvm installation potentially exists in /opt/nvm
+        # and it saves disk space and downloads.
+
+        if [ -d "/opt/nvm" ]; then
+            export NVM_DIR=/opt/nvm
+            echo "Use shared nvm installation"
+        else
+            export NVM_DIR=$HOME/.nvm_${REPONAME}_antora
+            echo "Use home dir nvm installation"
+        fi
+        mkdir -p "$NVM_DIR"
         export NODE_VERSION=18.18.1
         # The container has a pre-installed nodejs. Overwrite those again.
-        export NVM_BIN="$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/bin"
-        export NVM_DIR=$HOME/.nvm_${REPONAME}_antora
-        export NVM_INC=$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/include/node
+        export NVM_BIN="$NVM_DIR/versions/node/v${NODE_VERSION}/bin"
+        export NVM_INC=$NVM_DIR/versions/node/v${NODE_VERSION}/include/node
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
         export NVM_DIR=$HOME/.nvm_${REPONAME}_antora
         # shellcheck source=/dev/null
@@ -266,9 +312,13 @@ if [ "$skippackagesoption" != "yes" ]; then
         export PATH="$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/bin/:${PATH}"
         node --version
         npm --version
-        npm install gulp-cli@2.3.0
-        if grep -r mermaid "$BOOST_SRC_FOLDER/doc/"; then
-            npm install @mermaid-js/mermaid-cli@10.5.1
+        if ! which gulp; then
+            npm install -g gulp-cli@2.3.0
+        fi
+        if ! which mmdc; then
+            if grep -r mermaid "$BOOST_SRC_FOLDER/doc/"; then
+                npm install -g @mermaid-js/mermaid-cli@10.5.1
+            fi
         fi
     fi
 
@@ -314,30 +364,20 @@ if [ "$skippackagesoption" != "yes" ]; then
 	brew install ghostscript
 	brew install texlive
         brew install graphviz
-        sudo gem install public_suffix --version 4.0.7  # 4.0.7 from 2022 still supports ruby 2.5. Continue to use until ~2024.
-        sudo gem install css_parser --version 1.12.0  # 1.12.0 from 2022 still supports ruby 2.5. Continue to use until ~2024.
-        sudo gem install asciidoctor --version 2.0.17
-        sudo gem install afm --version 0.2.2
-        sudo gem install asciidoctor-pdf --version 2.3.4
-        sudo gem install asciidoctor-diagram --version 2.2.14
-        sudo gem install asciidoctor-multipage --version 0.0.18
-        pip3 install setuptools
-        pip3 install docutils
-        # which library is using rapidxml
-        # wget -O rapidxml.zip http://sourceforge.net/projects/rapidxml/files/latest/download
-        # unzip -n -d rapidxml rapidxml.zip
-        pip3 install https://github.com/bfgroup/jam_pygments/archive/master.zip
-        pip3 install Jinja2==3.1.2
-        pip3 install MarkupSafe==2.1.1
-        sudo gem install pygments.rb --version 2.3.0
-        pip3 install Pygments==2.13.0
-        sudo gem install rouge --version 4.0.0
-        pip3 install Sphinx==5.2.1
-        pip3 install git+https://github.com/pfultz2/sphinx-boost@8ad7d424c6b613864976546d801439c34a27e3f6
-        # from dockerfile:
-        pip3 install myst-parser==0.18.1
-        pip3 install future==0.18.2
-        pip3 install six==1.14.0
+
+        # Install pip packages
+        mkdir -p /tmp/build_docs
+        echo "$requirements_txt" > /tmp/build_docs/requirements.txt
+        pip3 install -r /tmp/build_docs/requirements.txt
+        rm /tmp/build_docs/requirements.txt
+
+        # Install ruby gems
+        gem install bundler
+        echo "$gemfile" > /tmp/build_docs/Gemfile
+        BUNDLE_GEMFILE=/tmp/build_docs/Gemfile bundle install
+        echo "$gemfile_local" > /tmp/build_docs/Gemfile
+        BUNDLE_GEMFILE=/tmp/build_docs/Gemfile bundle install
+        rm /tmp/build_docs/Gemfile
 
         # Locking the version numbers in place offers a better guarantee of a known, good build.
         # At the same time, it creates a perpetual outstanding task, to upgrade the gem and pip versions
@@ -369,15 +409,21 @@ if [ -f "${pythonvirtenvpath}/bin/activate" ]; then
 fi
 
 # In the above 'packages' section npm was installed. Activate it, if that has not been done already.
-if [ -d "$HOME/.nvm_${REPONAME}_antora" ]; then
+if [ -d "/opt/nvm" ]; then
+    export NVM_DIR=/opt/nvm
+    echo "Use shared nvm installation"
+else
+    export NVM_DIR=$HOME/.nvm_${REPONAME}_antora
+    echo "Use home dir nvm installation"
+fi
+if [ -d "$NVM_DIR" ]; then
         export NODE_VERSION=18.18.1
         # The container has a pre-installed nodejs. Overwrite those again.
-        export NVM_BIN="$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/bin"
-        export NVM_DIR=$HOME/.nvm_${REPONAME}_antora
-        export NVM_INC=$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/include/node
+        export NVM_BIN="$NVM_DIR/versions/node/v${NODE_VERSION}/bin"
+        export NVM_INC=$NVM_DIR/versions/node/v${NODE_VERSION}/include/node
         # shellcheck source=/dev/null
         . "$NVM_DIR/nvm.sh" && nvm use "v${NODE_VERSION}"
-        export PATH="$HOME/.nvm_${REPONAME}_antora/versions/node/v${NODE_VERSION}/bin/:${PATH}"
+        export PATH="$NVM_DIR/versions/node/v${NODE_VERSION}/bin/:${PATH}"
         node --version
         npm --version
 fi
