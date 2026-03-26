@@ -525,13 +525,14 @@ class script(script_common):
         for antora_lib in antora_libraries:
             os.chdir(self.root_dir)
             os.chdir(antora_lib)
+            lib_basename = os.path.basename(antora_lib)
             # for a submodule .git is a file pointing to the gitdir
             if not os.path.isfile(".git"):
                 print("skipping library: %s, already a git repository" % antora_lib)
                 continue
 
             utils.check_call("rm", ".git")
-            utils.check_call("git", "init")
+            utils.check_call("git", "init", "-b", "develop")
             utils.check_call("git", "add", "doc")
             utils.check_call("git", "commit", "-m", '"dummy antora commit"')
             utils.check_call(
@@ -539,7 +540,7 @@ class script(script_common):
                 "remote",
                 "add",
                 "origin",
-                f"https://github.com/boostorg/{antora_lib}",
+                f"https://github.com/boostorg/{lib_basename}",
             )
 
         # Build the full docs, and all the submodule docs.
