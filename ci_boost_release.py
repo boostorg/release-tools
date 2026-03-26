@@ -534,6 +534,13 @@ class script(script_common):
             utils.check_call("git", "init")
             utils.check_call("git", "add", "doc")
             utils.check_call("git", "commit", "-m", '"dummy antora commit"')
+            utils.check_call(
+                "git",
+                "remote",
+                "add",
+                "origin",
+                f"https://github.com/boostorg/{antora_lib}",
+            )
 
         # Build the full docs, and all the submodule docs.
         os.chdir(os.path.join(self.root_dir, "doc"))
@@ -639,7 +646,14 @@ class script(script_common):
             )
         )
         utils.check_call(
-            "git", "submodule", "--quiet", "foreach", "rm", "-fr", "doc/bin"
+            "git",
+            "submodule",
+            "--quiet",
+            "foreach",
+            "rm",
+            "-fr",
+            "doc/bin",
+            "doc/node_modules",
         )
 
         # Make the real distribution tree from the base tree.
