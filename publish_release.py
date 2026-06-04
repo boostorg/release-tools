@@ -5,18 +5,10 @@
 #
 # Instructions
 #
-# - Install jfrog cli https://jfrog.com/getcli/
+# Packages may already be installed. Otherwise, a quick setup:
 #
-# - Run jfrog config add, to configure credentials. Example:
-#
-# jfrog config add
-# Server ID: server1
-# JFrog platform URL: https://boostorg.jfrog.io
-# Access token (Leave blank for username and password/API key):
-# User: _your_username_
-# Password/API key: _your_password_
-# Is the Artifactory reverse proxy configured to accept a client certificate? (y/n) [n]? n
-# [Info] Encrypting password...
+# apt-get update
+# apt-get install python3 python3-dotenv python3-requests rclone curl 7zip zip gzip bzip2 unzip tar pigz bzip2 lbzip2 pbzip2 time htop locate nload
 #
 # - Run the script. For example, to publish boost_1_76_0
 #
@@ -348,6 +340,7 @@ def preflight():
         "tar",
         "pigz",
         "lbzip2",
+        "pbzip2",
         "time",
     ]
     for required_executable in required_executables:
@@ -701,8 +694,8 @@ if not options.skip_nodocs:
     unzip_method = {}
     unzip_method[".7z"] = "7z x"
     unzip_method[".zip"] = "unzip -q"
-    unzip_method[".tar.bz2"] = "tar -xf"
-    unzip_method[".tar.gz"] = "tar -xf"
+    unzip_method[".tar.bz2"] = "tar --use-compress-program=pbzip2 -xf"
+    unzip_method[".tar.gz"] = "tar --use-compress-program=pigz -xf"
     zip_method = {}
     zip_method[".7z"] = "7z a -bd -mx=7 -mmt8 -ms=on"
     zip_method[".zip"] = "zip -qr -9"
@@ -713,7 +706,7 @@ if not options.skip_nodocs:
     zip_extra_flags = {}
     zip_extra_flags[".7z"] = ""
     zip_extra_flags[".zip"] = ""
-    zip_extra_flags[".tar.bz2"] = "--use-compress-program=lbzip2"
+    zip_extra_flags[".tar.bz2"] = "--use-compress-program=pbzip2"
     zip_extra_flags[".tar.gz"] = "--use-compress-program=pigz"
 
     for s in suffixes:
