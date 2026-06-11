@@ -18,6 +18,8 @@ cd ${HOME}
 export CIRCLECI=true
 export CIRCLE_BRANCH=develop
 export CIRCLE_WORKING_DIRECTORY=~/project
+# This affects github edit page:
+export CI=true
 git clone -b develop https://github.com/boostorg/boost project
 wget "https://raw.githubusercontent.com/boostorg/release-tools/develop/ci_boost_common.py" -P ${HOME}
 wget "https://raw.githubusercontent.com/boostorg/release-tools/develop/ci_boost_release.py" -P ${HOME}

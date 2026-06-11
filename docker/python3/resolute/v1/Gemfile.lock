@@ -1,0 +1,38 @@
+GEM
+  remote: http://rubygems.org/
+  specs:
+    asciidoctor (2.0.26)
+    asciidoctor-diagram (3.2.1)
+      asciidoctor (>= 1.5.7, < 3.x)
+      rexml
+    asciidoctor-multipage (0.0.19)
+      asciidoctor (>= 2.0.11, < 2.1)
+    pygments.rb (4.0.0)
+    rexml (3.4.4)
+    rouge (5.0.0)
+      strscan (~> 3.1)
+    strscan (3.1.8)
+
+PLATFORMS
+  ruby
+  x86_64-linux-gnu
+
+DEPENDENCIES
+  asciidoctor
+  asciidoctor-diagram
+  asciidoctor-multipage
+  pygments.rb
+  rouge
+
+CHECKSUMS
+  asciidoctor (2.0.26) sha256=16e3accf1fc206bbd6335848649d7fd65f31d2daa60d85af13d47a8ee4b071c1
+  asciidoctor-diagram (3.2.1) sha256=e432d051f2a627f7846a22b7beb1f6c8bb392f49ee07e2cb73be2611242a6684
+  asciidoctor-multipage (0.0.19) sha256=f1c0e91f9e0b4f7b1b9f64bf7e6b8fb0e653b43863a17a4800bd66bc62c458c2
+  bundler (4.0.14) sha256=d09a0a965cf772266a7e49e83610be7c2f4e49e61134c42a56804bb383cc24b8
+  pygments.rb (4.0.0) sha256=f48bb03a28cf5eaa56e8d3d5a49b76a978199a51bd8643cc4b32fbb7ffecee57
+  rexml (3.4.4) sha256=19e0a2c3425dfbf2d4fc1189747bdb2f849b6c5e74180401b15734bc97b5d142
+  rouge (5.0.0) sha256=e2de9bba2f9cb88f8a73bca3643b560b2b398f32f91bf716f584477bc0175ebc
+  strscan (3.1.8) sha256=aae2db611a225559f21ffbb71765c9a4e60fd262534a9ea84f4f11c7f32f679e
+
+BUNDLED WITH
+  4.0.14
