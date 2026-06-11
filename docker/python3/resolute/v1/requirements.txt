@@ -1,0 +1,12 @@
+Jinja2==3.1.6
+MarkupSafe==3.0.3
+Pygments==2.20.0
+Sphinx==9.1.0
+docutils==0.22.4
+future==1.0.0
+git+https://github.com/pfultz2/sphinx-boost@8ad7d424c6b613864976546d801439c34a27e3f6
+https://github.com/bfgroup/jam_pygments/archive/master.zip
+myst-parser==5.1.0
+setuptools==82.0.1
+six==1.17.0
+
