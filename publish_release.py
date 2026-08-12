@@ -423,6 +423,36 @@ def preflight():
                 print("Exiting.")
                 exit(1)
 
+    # website-v2-docs branch verification:
+    print("Checking that master is up-to-date with develop in boostorg/website-v2-docs")
+    website_v2_docs_lagging = False
+    try:
+        response = requests.get(
+            "https://api.github.com/repos/boostorg/website-v2-docs/compare/master...develop",
+            headers={"Accept": "application/vnd.github+json"},
+            timeout=30,
+        )
+        response.raise_for_status()
+        # "ahead_by" counts how many commits develop has that master lacks
+        if response.json().get("ahead_by", 0) > 0:
+            website_v2_docs_lagging = True
+        else:
+            print("boostorg/website-v2-docs ok")
+    except Exception as e:
+        print(f"The check of boostorg/website-v2-docs could not be completed: {e}")
+        website_v2_docs_lagging = True
+    if website_v2_docs_lagging:
+        print(
+            "The release notes are stored in https://github.com/boostorg/website-v2-docs and in that repository the master branch is not up-to-date with the develop branch, so the release notes might also be incorrect. Please merge develop to master in that repository (in a safe way, which is --ff-only, and not forcing). If you need permissions or assistance, ask the relevant admin."
+        )
+        print("\n")
+        print("It is not recommended to proceed until this is fixed.")
+        print("")
+        answer = input("Do you want to continue anyway: [y/n]")
+        if not answer or answer[0].lower() != "y":
+            print("Exiting.")
+            exit(1)
+
 
 def import_new_releases():
     print(
