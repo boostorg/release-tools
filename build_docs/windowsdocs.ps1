@@ -19,8 +19,8 @@ param (
 $scriptname="windowsdocs.ps1"
 $pythonvirtenvpath="${HOME}\venvboostdocs"
 $nvm_install_version="1.1.11"
-$node_version="20.17.0"
-$node_version_basic="20"
+$node_version="22.23.2"
+$node_version_basic="22"
 
 $requirements_txt = @"
 Jinja2==3.1.4
