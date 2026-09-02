@@ -247,7 +247,7 @@ if [ "$skippackagesoption" != "yes" ]; then
             echo "Use home dir nvm installation"
         fi
         mkdir -p "$NVM_DIR"
-        export NODE_VERSION=18.18.1
+        export NODE_VERSION=22.23.2
         # The container has a pre-installed nodejs. Overwrite those again.
         export NVM_BIN="$NVM_DIR/versions/node/v${NODE_VERSION}/bin"
         export NVM_INC=$NVM_DIR/versions/node/v${NODE_VERSION}/include/node
@@ -346,7 +346,7 @@ else
     echo "Use home dir nvm installation"
 fi
 if [ -d "$NVM_DIR" ]; then
-        export NODE_VERSION=18.18.1
+        export NODE_VERSION=22.23.2
         # The container has a pre-installed nodejs. Overwrite those again.
         export NVM_BIN="$NVM_DIR/versions/node/v${NODE_VERSION}/bin"
         export NVM_INC=$NVM_DIR/versions/node/v${NODE_VERSION}/include/node
