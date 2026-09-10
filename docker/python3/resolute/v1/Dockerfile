@@ -33,7 +33,6 @@ RUN set -xe \
         git \
         graphviz \
         jq \
-        lbzip2 \
         libsaxonhe-java \
         openssh-client \
         openssl libssl-dev \
