@@ -8,7 +8,7 @@
 # Packages may already be installed. Otherwise, a quick setup:
 #
 # apt-get update
-# apt-get install python3 python3-dotenv python3-requests rclone curl 7zip zip gzip bzip2 unzip tar pigz bzip2 lbzip2 pbzip2 time htop locate nload
+# apt-get install python3 python3-dotenv python3-requests rclone curl 7zip zip gzip bzip2 unzip tar pigz bzip2 pbzip2 time htop locate nload
 #
 # - Run the script. For example, to publish boost_1_76_0
 #
@@ -339,7 +339,6 @@ def preflight():
         "unzip",
         "tar",
         "pigz",
-        "lbzip2",
         "pbzip2",
         "time",
     ]

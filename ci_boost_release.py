@@ -732,7 +732,7 @@ class script(script_common):
             packages.append(
                 parallel_call(
                     "tar",
-                    "--use-compress-program=lbzip2",
+                    "--use-compress-program=pbzip2",
                     "--exclude=ci_boost_common.py",
                     "--exclude=ci_boost_release.py",
                     "-cf",
