@@ -33,4 +33,4 @@ jobs:
 
       - name: Resize Instance
         run: |
-            aws ssm start-automation-execution --document-name "AWS-ResizeInstance" --document-version "\$DEFAULT" --parameters '{"InstanceId":["${{ secrets.DEPLOY_INSTANCE_ID }}"],"InstanceType":["t2.micro"],"SleepWait":["PT5S"]}' --region ${{ secrets.DEPLOY_REGION }}
+            aws ssm start-automation-execution --document-name "AWS-ResizeInstance" --document-version "\$DEFAULT" --parameters '{"InstanceId":["${{ secrets.DEPLOY_INSTANCE_ID }}"],"InstanceType":["t3.micro"],"SleepWait":["PT5S"]}' --region ${{ secrets.DEPLOY_REGION }}
