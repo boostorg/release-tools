@@ -351,6 +351,78 @@ class script(script_common):
         # self.command_install_sphinx()
         # self.command_install_asciidoctor()
 
+    def command_install_mrdocs(self):
+        # MrDocs is the one docs dependency deliberately not baked into the
+        # Docker image: it is under active development, while the images are
+        # intentionally left alone for long stretches. Installing it here keeps
+        # it current without an image rebuild, since this script is fetched
+        # fresh from master on every build.
+        #
+        # Antora is run in two separate places during a release: by each
+        # library's own doc/build_antora.sh, and by website-v2-docs' libdoc.sh.
+        # Each is a separate node process with its own node_modules, and each
+        # loads @cppalliance/antora-cpp-reference-extension, which locates
+        # MrDocs through api.github.com unless MRDOCS_ROOT already points at an
+        # install. That API allows 60 requests/hour to unauthenticated callers
+        # sharing a CI egress IP, so those lookups intermittently fail with
+        # HTTP 403 and abort the build. Exporting MRDOCS_ROOT here covers every
+        # Antora invocation that follows.
+        #
+        # The release asset is downloaded directly rather than resolved through
+        # the releases API, because the asset URL is not subject to that limit.
+
+        # Several paths still fall back to the API: an unpopulated MRDOCS_ROOT,
+        # a binary that will not run, or a playbook pinning a version this
+        # install does not satisfy. A token raises the limit on those paths from
+        # 60 requests/hour shared per IP to 5000/hour against its own quota.
+        # The extension accepts either name, and ci_boost_common already reads
+        # GH_TOKEN, so check both.
+        if os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN"):
+            utils.log("GITHUB_TOKEN detected. OK.")
+        else:
+            utils.log(
+                "WARNING: no GITHUB_TOKEN detected. It is preferable to set this token."
+            )
+
+        mrdocs_root = os.getenv("MRDOCS_ROOT", "/opt/mrdocs")
+        mrdocs_exe = os.path.join(mrdocs_root, "bin", "mrdocs")
+        mrdocs_url = os.getenv(
+            "MRDOCS_URL",
+            "https://github.com/cppalliance/mrdocs/releases/download"
+            "/develop-release/MrDocs-develop-Linux.tar.gz",
+        )
+        try:
+            if not os.path.isfile(mrdocs_exe):
+                tarball = os.path.join(self.build_dir, "mrdocs.tar.gz")
+                utils.check_call(
+                    "curl", "-s", "-S", "--retry", "10", "-L", "-o", tarball, mrdocs_url
+                )
+                utils.makedirs(mrdocs_root)
+                # The archive holds a single versioned top level directory,
+                # such as MrDocs-0.8.0-Linux/. Strip it so bin/ and share/ land
+                # directly under the prefix: MrDocs resolves its addons as
+                # <MRDOCS_ROOT>/share/mrdocs.
+                utils.check_call(
+                    "tar", "-xzf", tarball, "-C", mrdocs_root, "--strip-components=1"
+                )
+                os.remove(tarball)
+            # The extension runs this same check and silently falls back to the
+            # API when it fails, so surface a broken install here instead.
+            utils.check_call(mrdocs_exe, "--version")
+        except Exception as e:
+            # Not fatal. Without MRDOCS_ROOT the extension downloads MrDocs
+            # itself, which is the behaviour this method exists to avoid but is
+            # still the long-standing status quo.
+            utils.log("WARNING: unable to set MRDOCS_ROOT. Continuing...")
+            utils.log("Could not install MrDocs to %s: %s" % (mrdocs_root, e))
+            return
+
+        os.environ["MRDOCS_ROOT"] = mrdocs_root
+        os.environ["PATH"] = (
+            os.path.join(mrdocs_root, "bin") + os.pathsep + os.environ["PATH"]
+        )
+        utils.log("MRDOCS_ROOT set")
+
     @staticmethod
     def parse_semver(s):
         parts = s.split(".")
@@ -491,6 +563,12 @@ class script(script_common):
             "using asciidoctor ;",
             "using saxonhe ;",
         )
+
+        # Install MrDocs and export MRDOCS_ROOT before anything runs Antora.
+        # The per-library doc/build_antora.sh scripts are invoked from the
+        # docs build below, well before website-v2-docs is even cloned, so this
+        # has to happen here to cover them.
+        self.command_install_mrdocs()
 
         # Before we build the full docs, make sure each repo opting into Antora
         # doc generation is a git repository, and not a submodule
